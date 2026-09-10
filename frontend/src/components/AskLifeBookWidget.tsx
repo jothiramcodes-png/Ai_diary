@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Sparkles, X, Send, CheckCircle2, Clock, Calendar, ChevronRight } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Sparkles, X, Send, CheckCircle2, Clock, Calendar, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { api } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { ForgettingItem } from "../types";
@@ -18,12 +18,70 @@ export const AskLifeBookWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+  const synthRef = useRef<SpeechSynthesis | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "ai",
       text: `Hi ${user?.full_name?.split(" ")[0] || "there"}! ✨ What would you like to remember or check today?`
     }
   ]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      synthRef.current = window.speechSynthesis;
+    }
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+    };
+  }, []);
+
+  const handleSpeak = (text: string, index: number) => {
+    if (!synthRef.current) return;
+
+    // If already speaking this message, cancel/pause it
+    if (speakingIndex === index) {
+      synthRef.current.cancel();
+      setSpeakingIndex(null);
+      return;
+    }
+
+    synthRef.current.cancel();
+
+    // Clean markdown/bullet formatting into clean natural spoken prose
+    const cleanSpeech = text
+      .replace(/[•*#_`~]/g, " ")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    // Pick best natural voice if available
+    const voices = synthRef.current.getVoices();
+    const preferredVoice = voices.find(
+      (v) => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Jenny"))
+    ) || voices.find((v) => v.lang.startsWith("en"));
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onend = () => {
+      setSpeakingIndex(null);
+    };
+
+    utterance.onerror = () => {
+      setSpeakingIndex(null);
+    };
+
+    setSpeakingIndex(index);
+    synthRef.current.speak(utterance);
+  };
 
   const quickQuestions = [
     "What did I do today?",
@@ -114,14 +172,43 @@ export const AskLifeBookWidget: React.FC = () => {
             key={idx}
             className={`flex flex-col ${m.sender === "user" ? "items-end" : "items-start"}`}
           >
-            <div
-              className={`px-3 py-2 rounded-xl max-w-[90%] leading-relaxed whitespace-pre-line ${
-                m.sender === "user"
-                  ? "bg-emerald-700 text-white font-medium"
-                  : "bg-zinc-800/90 text-zinc-200 border border-zinc-700/60"
-              }`}
-            >
-              {m.text}
+            <div className="relative group max-w-[90%]">
+              <div
+                className={`px-3 py-2 rounded-xl leading-relaxed whitespace-pre-line ${
+                  m.sender === "user"
+                    ? "bg-emerald-700 text-white font-medium"
+                    : "bg-zinc-800/90 text-zinc-200 border border-zinc-700/60"
+                }`}
+              >
+                {m.text}
+              </div>
+
+              {/* TTS Listen Button for AI Responses */}
+              {m.sender === "ai" && (
+                <div className="flex items-center gap-1.5 mt-1 ml-1">
+                  <button
+                    onClick={() => handleSpeak(m.text, idx)}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium transition-all ${
+                      speakingIndex === idx
+                        ? "bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 animate-pulse"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+                    }`}
+                    title={speakingIndex === idx ? "Stop speaking" : "Listen to audio (Text-to-Speech)"}
+                  >
+                    {speakingIndex === idx ? (
+                      <>
+                        <VolumeX className="w-3 h-3 text-emerald-400" />
+                        <span>Stop</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3 h-3 text-emerald-400" />
+                        <span>Listen</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Render Forgetting Items Cards if present */}
