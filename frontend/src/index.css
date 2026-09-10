@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background-color: #1c1109;
+  color: #2c2016;
+  overflow-x: hidden;
+}
+
+.font-serif-title {
+  font-family: "Playfair Display", "Source Serif 4", Georgia, serif;
+}
+
+.font-handwriting {
+  font-family: "Caveat", cursive, sans-serif;
+}
+
+.font-book-brand {
+  font-family: "Cinzel", Georgia, serif;
+}
+
+/* Realistic Journal Paper Texture */
+.journal-paper {
+  background-color: #fbf7ee;
+  background-image: radial-gradient(#ece2ce 1px, transparent 1px), radial-gradient(#ece2ce 1px, #fbf7ee 1px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  box-shadow: inset 0 0 50px rgba(180, 150, 110, 0.18), 0 20px 40px rgba(0, 0, 0, 0.55);
+}
+
+.journal-page-crease {
+  box-shadow: inset 20px 0 30px -10px rgba(90, 60, 30, 0.12), inset -20px 0 30px -10px rgba(90, 60, 30, 0.12);
+}
+
+/* Stitched Leather Spine */
+.leather-spine {
+  background: linear-gradient(135deg, #2b170e 0%, #3e2417 50%, #200f07 100%);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.6), inset -2px 0 5px rgba(255, 255, 255, 0.08);
+  border-right: 2px dashed rgba(212, 175, 55, 0.4);
+}
+
+/* Washi Tape Effect */
+.washi-tape {
+  background: rgba(235, 220, 195, 0.85);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  backdrop-filter: blur(1px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1e7d0;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7b299;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9f866c;
+}

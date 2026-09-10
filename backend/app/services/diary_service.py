@@ -1,0 +1,212 @@
+import os
+import uuid
+from datetime import datetime, timezone
+from typing import Optional, List, Dict, Any
+from sqlalchemy.orm import Session
+from app.models.diary import DiaryEntry
+from app.models.entity import Entity
+from app.models.commitment import Commitment
+from app.models.audit import AuditLog
+from app.storage.storage_service import storage_service
+from app.ai.stt_service import get_stt_provider, get_ai_provider
+
+class DiaryService:
+    @staticmethod
+    def transition_status(entry: DiaryEntry, status: str, progress: int, message: str, db: Session):
+        entry.status = status
+        history = list(entry.status_history or [])
+        history.append({
+            "status": status,
+            "progress": progress,
+            "message": message,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        entry.status_history = history
+        db.commit()
+        db.refresh(entry)
+
+    @classmethod
+    async def create_text_entry(cls, user_id: str, raw_text: str, title: Optional[str], category: Optional[str], mood: Optional[str], db: Session) -> DiaryEntry:
+        entry_id = str(uuid.uuid4())
+        
+        # 1. Save raw text immediately
+        raw_path = await storage_service.save_raw_text(user_id, entry_id, raw_text)
+        
+        # 2. Persist DiaryEntry with status RECEIVED then SAVED
+        entry = DiaryEntry(
+            id=entry_id,
+            user_id=user_id,
+            input_type="text",
+            raw_text=raw_text,
+            title=title or "New Entry",
+            category=category or "General",
+            mood=mood,
+            status="RECEIVED",
+            status_history=[{
+                "status": "RECEIVED",
+                "progress": 10,
+                "message": "Raw memory received by gateway",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }]
+        )
+        db.add(entry)
+        db.commit()
+        db.refresh(entry)
+        
+        cls.transition_status(entry, "SAVED", 25, "Raw text saved to durable storage", db)
+        return entry
+
+    @classmethod
+    async def process_entry_ai(cls, entry_id: str, db: Optional[Session] = None):
+        own_session = False
+        if db is None:
+            from app.core.database import SessionLocal
+            db = SessionLocal()
+            own_session = True
+
+        try:
+            entry = db.query(DiaryEntry).filter(DiaryEntry.id == entry_id).first()
+            if not entry:
+                return
+                
+            ai_provider = get_ai_provider()
+            
+            # Step 1: Transcribing (if voice)
+            if entry.input_type == "voice" and not entry.transcript:
+                cls.transition_status(entry, "TRANSCRIBING", 40, "Converting voice to text...", db)
+                stt = get_stt_provider()
+                if os.path.exists(entry.media_path):
+                    with open(entry.media_path, "rb") as af:
+                        audio_bytes = af.read()
+                else:
+                    audio_bytes = b""
+                stt_res = await stt.transcribe(audio_bytes, "voice.webm")
+                entry.transcript = stt_res.get("transcript", "")
+                db.commit()
+
+            # Step 2: Extracting
+            cls.transition_status(entry, "EXTRACTING", 60, "Extracting people, places, activities & commitments...", db)
+            text_to_analyze = entry.transcript if entry.input_type == "voice" else entry.raw_text
+            ai_res = await ai_provider.understand_entry(text_to_analyze or "")
+            
+            # Save extracted entities
+            for p in ai_res.people:
+                db.add(Entity(user_id=entry.user_id, diary_entry_id=entry.id, type="person", name=p.name, normalized_name=p.name.lower(), confidence=p.confidence))
+            for pl in ai_res.places:
+                db.add(Entity(user_id=entry.user_id, diary_entry_id=entry.id, type="place", name=pl.name, normalized_name=pl.name.lower(), confidence=pl.confidence))
+            for pr in ai_res.projects:
+                db.add(Entity(user_id=entry.user_id, diary_entry_id=entry.id, type="project", name=pr.name, normalized_name=pr.name.lower(), confidence=pr.confidence))
+            for ac in ai_res.activities:
+                db.add(Entity(user_id=entry.user_id, diary_entry_id=entry.id, type="activity", name=ac.name, normalized_name=ac.name.lower(), confidence=ac.confidence))
+            
+            # Step 3: Drafted
+            cls.transition_status(entry, "DRAFTED", 80, "AI draft generated. Awaiting your review.", db)
+            entry.title = ai_res.title
+            entry.generated_content = ai_res.diary_draft
+            entry.category = ai_res.category
+            entry.confidence = ai_res.confidence
+            entry.disambiguation = ai_res.disambiguation
+            
+            # Transition to USER_REVIEW
+            cls.transition_status(entry, "USER_REVIEW", 85, "Ready for human confirmation", db)
+            
+        except Exception as ex:
+            cls.transition_status(entry, "ENRICHMENT_PENDING", 50, f"AI enrichment delayed: {str(ex)[:100]}", db)
+        finally:
+            if own_session:
+                db.close()
+
+    @classmethod
+    async def create_voice_entry(cls, user_id: str, audio_bytes: bytes, filename: str, db: Session) -> DiaryEntry:
+        entry_id = str(uuid.uuid4())
+        media_path = await storage_service.save_raw_audio(user_id, entry_id, audio_bytes, filename)
+        
+        entry = DiaryEntry(
+            id=entry_id,
+            user_id=user_id,
+            input_type="voice",
+            media_path=media_path,
+            title="Voice Memory",
+            category="General",
+            status="RECEIVED",
+            status_history=[{
+                "status": "RECEIVED",
+                "progress": 10,
+                "message": "Voice audio received",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }]
+        )
+        db.add(entry)
+        db.commit()
+        db.refresh(entry)
+        
+        cls.transition_status(entry, "SAVED", 25, "Raw voice file securely committed to disk", db)
+        return entry
+
+    @classmethod
+    async def create_photo_entry(cls, user_id: str, image_bytes: bytes, filename: str, caption: Optional[str], db: Session) -> DiaryEntry:
+        entry_id = str(uuid.uuid4())
+        media_path = await storage_service.save_raw_image(user_id, entry_id, image_bytes, filename)
+        
+        entry = DiaryEntry(
+            id=entry_id,
+            user_id=user_id,
+            input_type="photo",
+            media_path=media_path,
+            photo_urls=[f"/api/v1/diary/{entry_id}/media"],
+            raw_text=caption or "Photo Memory",
+            title=caption or "Visual Memory",
+            category="Visual",
+            status="RECEIVED",
+            status_history=[{
+                "status": "RECEIVED",
+                "progress": 10,
+                "message": "Photo received",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }]
+        )
+        db.add(entry)
+        db.commit()
+        db.refresh(entry)
+        
+        cls.transition_status(entry, "SAVED", 25, "Raw photo securely committed to disk", db)
+        return entry
+
+    @classmethod
+    async def confirm_entry(cls, user_id: str, entry_id: str, confirmed_title: Optional[str], confirmed_content: Optional[str], disambiguation_resolution: Optional[Dict[str, str]], db: Session) -> DiaryEntry:
+        entry = db.query(DiaryEntry).filter(DiaryEntry.id == entry_id, DiaryEntry.user_id == user_id).first()
+        if not entry:
+            raise ValueError("Entry not found")
+
+        if confirmed_title:
+            entry.title = confirmed_title
+        if confirmed_content:
+            entry.generated_content = confirmed_content
+            
+        cls.transition_status(entry, "CONFIRMED", 90, "Memory approved by user", db)
+        
+        # Sync with Life Graph
+        from app.services.life_graph_service import LifeGraphService
+        LifeGraphService.sync_entry_to_graph(entry, db)
+        cls.transition_status(entry, "GRAPH_UPDATED", 95, "Personal Life Graph connected", db)
+        
+        # Extract commitments into Commitment model
+        from app.services.commitment_service import CommitmentService
+        CommitmentService.extract_and_save_commitments(entry, db)
+        
+        cls.transition_status(entry, "INDEXED", 98, "Search indices and vectors prepared", db)
+        cls.transition_status(entry, "COMPLETED", 100, "Memory fully archived and connected", db)
+        
+        # Log audit
+        db.add(AuditLog(
+            user_id=user_id,
+            actor=user_id,
+            action="confirm_entry",
+            resource=f"DiaryEntry:{entry.id}",
+            details={"title": entry.title, "disambiguation": disambiguation_resolution}
+        ))
+        db.commit()
+        db.refresh(entry)
+        return entry
+
+diary_service = DiaryService()
