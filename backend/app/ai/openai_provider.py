@@ -22,6 +22,9 @@ class RealAIProvider(AIProvider):
     async def generate_diary(self, raw_input: str, entities: Dict[str, Any]) -> str:
         return await self.fallback.generate_diary(raw_input, entities)
 
+    async def regenerate_diary(self, text: str, tone: Optional[str] = "reflective", instructions: Optional[str] = None, user_context: Optional[str] = None) -> Dict[str, str]:
+        return await self.fallback.regenerate_diary(text, tone, instructions, user_context)
+
     async def answer_question(self, query: str, context_entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         return await self.fallback.answer_question(query, context_entries)
 

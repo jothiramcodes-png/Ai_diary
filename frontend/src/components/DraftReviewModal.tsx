@@ -24,6 +24,22 @@ export const DraftReviewModal: React.FC<DraftReviewModalProps> = ({
   const [content, setContent] = useState(entry.generated_content || entry.raw_text || "");
   const [selectedDisambig, setSelectedDisambig] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [selectedTone, setSelectedTone] = useState("reflective");
+
+  const handleRegenerate = async (tone = selectedTone) => {
+    if (!entry) return;
+    setIsRegenerating(true);
+    try {
+      const regenerated = await api.regenerateEntry(entry.id, tone);
+      if (regenerated.title) setTitle(regenerated.title);
+      if (regenerated.generated_content) setContent(regenerated.generated_content);
+    } catch (err) {
+      console.error("Failed to regenerate entry:", err);
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
@@ -189,12 +205,39 @@ export const DraftReviewModal: React.FC<DraftReviewModalProps> = ({
             Cancel
           </button>
 
+          <div className="hidden sm:flex items-center gap-1 bg-[#ede1ce] p-1 rounded-xl">
+            {[
+              { id: "reflective", label: "Reflective" },
+              { id: "poetic", label: "Poetic" },
+              { id: "concise", label: "Concise" },
+              { id: "detailed", label: "Detailed" }
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setSelectedTone(t.id);
+                  handleRegenerate(t.id);
+                }}
+                disabled={isRegenerating}
+                className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                  selectedTone === t.id
+                    ? "bg-[#3d2714] text-white shadow-xs"
+                    : "text-[#5c3e21] hover:bg-[#dfcbb2]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           <button
-            onClick={() => setContent(entry.generated_content || "")}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-[#5c3e21] bg-[#eadecb] hover:bg-[#dfcbb2] transition-colors"
+            onClick={() => handleRegenerate(selectedTone)}
+            disabled={isRegenerating}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-[#5c3e21] bg-[#eadecb] hover:bg-[#dfcbb2] transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Regenerate</span>
+            <RotateCcw className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin text-amber-700" : ""}`} />
+            <span>{isRegenerating ? "Rewriting AI..." : "Regenerate"}</span>
           </button>
 
           <button

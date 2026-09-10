@@ -11,7 +11,8 @@ import {
   Utensils,
   Lightbulb,
   BookOpen,
-  Sparkles
+  Sparkles,
+  RotateCcw
 } from "lucide-react";
 import { DiaryEntry, User } from "../types";
 import { ProcessingTracker } from "./ProcessingTracker";
@@ -25,6 +26,8 @@ interface JournalLeftPageProps {
   onOpenReview: () => void;
   onTellMeMore: () => void;
   onRetryProcessing?: () => void;
+  onRegenerate?: (tone?: string) => Promise<void> | void;
+  isRegenerating?: boolean;
   onOpenPhotos?: () => void;
   onOpenGraph?: () => void;
 }
@@ -38,6 +41,8 @@ export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
   onOpenReview,
   onTellMeMore,
   onRetryProcessing,
+  onRegenerate,
+  isRegenerating = false,
   onOpenPhotos,
   onOpenGraph,
 }) => {
@@ -168,24 +173,61 @@ export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-[#8a6849]">
               Today's Diary
             </span>
+            {isRegenerating && (
+              <span className="text-[10px] text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 animate-pulse">
+                <Sparkles className="w-2.5 h-2.5" /> AI Rewriting...
+              </span>
+            )}
           </div>
-          <button
-            onClick={onOpenReview}
-            className="flex items-center gap-1 text-xs text-[#8a6849] hover:text-[#4a3420] font-semibold"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-            <span>Edit</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onRegenerate && onRegenerate()}
+              disabled={isRegenerating}
+              title="Regenerate today's diary with AI"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-[#8a6849] hover:text-[#3d2511] hover:bg-[#ede1ce] transition-all disabled:opacity-50 cursor-pointer border border-transparent hover:border-[#dfd0ba]"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin text-amber-700" : ""}`} />
+              <span>{isRegenerating ? "Rewriting..." : "Regenerate"}</span>
+            </button>
+            <button
+              onClick={onOpenReview}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-[#8a6849] hover:text-[#3d2511] hover:bg-[#ede1ce] font-semibold transition-all cursor-pointer border border-transparent hover:border-[#dfd0ba]"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+          </div>
         </div>
 
         <h3 className="text-lg font-bold text-[#352010] font-serif-title mb-2">
           {activeEntry?.title || "A Productive Day in Madurai"}
         </h3>
-        <p className="text-xs md:text-sm text-[#473322] leading-relaxed font-serif-title mb-4">
+        <p className="text-xs md:text-sm text-[#473322] leading-relaxed font-serif-title mb-3">
           {activeEntry?.generated_content ||
             activeEntry?.raw_text ||
             "Today I went to Madurai for a customer meeting with Ravi. We discussed the website project and he asked me to send the quotation tomorrow. After the meeting, I had a nice biryani lunch with Kumar at ABC Restaurant. It was a long but fulfilling day. I reached home around 8 PM."}
         </p>
+
+        {/* Quick Style / Tone Pills */}
+        <div className="flex items-center flex-wrap gap-1.5 mb-4 pt-1 border-t border-[#f0e6d5]/70">
+          <span className="text-[10px] uppercase font-bold text-[#8a6849]/80 tracking-wider mr-1">AI Tone:</span>
+          {[
+            { id: "reflective", label: "Reflective" },
+            { id: "poetic", label: "Poetic" },
+            { id: "concise", label: "Concise" },
+            { id: "detailed", label: "Detailed" }
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => onRegenerate && onRegenerate(t.id)}
+              disabled={isRegenerating}
+              title={`Regenerate diary with ${t.label} tone`}
+              className="text-[11px] px-2.5 py-0.5 rounded-full border border-[#d9c4a8] text-[#5c3e21] hover:bg-[#ebdcc4] active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-serif-title"
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
         {/* Photo Thumbnails */}
         <div

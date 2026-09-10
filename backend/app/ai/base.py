@@ -17,6 +17,10 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
+    async def regenerate_diary(self, text: str, tone: Optional[str] = "reflective", instructions: Optional[str] = None, user_context: Optional[str] = None) -> Dict[str, str]:
+        pass
+
+    @abstractmethod
     async def answer_question(self, query: str, context_entries: List[Dict[str, Any]]) -> Dict[str, Any]:
         pass
 

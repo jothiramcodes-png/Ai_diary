@@ -49,3 +49,7 @@ class DiaryEntryUpdate(BaseModel):
     generated_content: Optional[str] = None
     category: Optional[str] = None
     mood: Optional[str] = None
+
+class DiaryRegenerateRequest(BaseModel):
+    tone: Optional[str] = "reflective"
+    instructions: Optional[str] = None

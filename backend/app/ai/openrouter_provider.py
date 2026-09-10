@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 import httpx
 from typing import Optional, Dict, Any, List
@@ -140,6 +140,41 @@ Return only the final diary text.'''
         if content:
             return content.strip()
         return await self.fallback.generate_diary(raw_input, entities)
+
+    async def regenerate_diary(self, text: str, tone: Optional[str] = "reflective", instructions: Optional[str] = None, user_context: Optional[str] = None) -> Dict[str, str]:
+        if not self.api_key:
+            return await self.fallback.regenerate_diary(text, tone, instructions, user_context)
+
+        system_msg = (
+            "You are a master personal journal writer and reflective storyteller. "
+            "Your task is to take the user's daily memory or draft and rewrite/regenerate it into an eloquent, "
+            f"beautifully written first-person ('I') journal narrative.\n"
+            f"Desired tone: {tone or 'warm and reflective'}.\n"
+            + (f"User personal background: {user_context}\n" if user_context else "")
+            + (f"User instructions: {instructions}\n" if instructions else "")
+            + "Output strictly a valid JSON object with:\n"
+            "- \"title\": An evocative, memorable 3-6 word journal title\n"
+            "- \"content\": The rewritten, elevated first-person diary entry narrative"
+        )
+        user_msg = f"Original text or memory notes:\n\"\"\"\n{text}\n\"\"\"\n\nPlease regenerate this diary entry now."
+
+        try:
+            res_content = await self._call_openrouter([
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg}
+            ], response_format_json=True, temperature=0.7)
+
+            if res_content:
+                data = json.loads(res_content)
+                if data.get("content"):
+                    return {
+                        "title": data.get("title") or "Memories of Today",
+                        "content": data.get("content")
+                    }
+        except Exception as e:
+            logger.warning(f"OpenRouter regenerate_diary failed, using fallback: {e}")
+
+        return await self.fallback.regenerate_diary(text, tone, instructions, user_context)
 
     async def answer_question(self, query: str, context_entries: List[Dict[str, Any]], user_profile: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         if not self.api_key:

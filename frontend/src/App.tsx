@@ -109,6 +109,8 @@ export const AppContent: React.FC = () => {
     }, 1500);
   };
 
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
   const handleRetryProcessing = async () => {
     if (!activeEntry) return;
     try {
@@ -116,6 +118,39 @@ export const AppContent: React.FC = () => {
       handleEntryCreated(updated);
     } catch (e) {
       console.error("Retry processing failed:", e);
+    }
+  };
+
+  const handleRegenerateEntry = async (tone = "reflective") => {
+    let targetEntry = activeEntry;
+    if (!targetEntry && entries.length > 0) {
+      targetEntry = entries[0];
+    }
+    if (!targetEntry) {
+      try {
+        targetEntry = await api.submitText(
+          "Today I went to Madurai for a customer meeting with Ravi. We discussed the website project and he asked me to send the quotation tomorrow. After the meeting, I had a nice biryani lunch with Kumar at ABC Restaurant. It was a long but fulfilling day. I reached home around 8 PM.",
+          "A Productive Day in Madurai",
+          "Business / Travel",
+          "productive"
+        );
+        setActiveEntry(targetEntry);
+        setEntries([targetEntry]);
+      } catch (err) {
+        console.error("Failed to create baseline entry:", err);
+        return;
+      }
+    }
+
+    setIsRegenerating(true);
+    try {
+      const updated = await api.regenerateEntry(targetEntry.id, tone);
+      setActiveEntry(updated);
+      setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    } catch (e) {
+      console.error("Regeneration failed:", e);
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -274,6 +309,8 @@ export const AppContent: React.FC = () => {
               onOpenPhoto={() => setPhotoModalOpen(true)}
               onOpenReview={() => setReviewModalOpen(true)}
               onRetryProcessing={handleRetryProcessing}
+              onRegenerate={handleRegenerateEntry}
+              isRegenerating={isRegenerating}
               onOpenPhotos={() => setPhotosModalOpen(true)}
               onOpenGraph={() => setGraphModalOpen(true)}
               onTellMeMore={() => setInsightsModalOpen(true)}

@@ -129,6 +129,19 @@ export const api = {
     return res.json();
   },
 
+  async regenerateEntry(entryId: string, tone = "reflective", instructions?: string): Promise<DiaryEntry> {
+    const res = await fetch(`${API_BASE}/diary/${entryId}/regenerate`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ tone, instructions })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to regenerate diary" }));
+      throw new Error(err.detail || "Failed to regenerate diary");
+    }
+    return res.json();
+  },
+
   async confirmEntry(entryId: string, confirmedTitle?: string, confirmedContent?: string, disambiguationResolution?: Record<string, string>): Promise<DiaryEntry> {
     const res = await fetch(`${API_BASE}/diary/${entryId}/confirm`, {
       method: "POST",

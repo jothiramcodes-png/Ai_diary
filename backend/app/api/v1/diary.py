@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.api.v1.deps import get_current_user
 from app.models.user import User
 from app.models.diary import DiaryEntry
-from app.schemas.diary import DiaryEntryCreate, DiaryEntryOut, DiaryConfirmRequest, DiaryEntryUpdate
+from app.schemas.diary import DiaryEntryCreate, DiaryEntryOut, DiaryConfirmRequest, DiaryEntryUpdate, DiaryRegenerateRequest
 from app.services.diary_service import DiaryService
 
 router = APIRouter(prefix="/diary", tags=["diary"])
@@ -197,6 +197,28 @@ async def retry_entry_processing(
     background_tasks.add_task(DiaryService.process_entry_ai, entry.id)
     return DiaryEntryOut.model_validate(entry)
 
+@router.post("/{entry_id}/regenerate", response_model=DiaryEntryOut)
+async def regenerate_entry(
+    entry_id: str,
+    payload: Optional[DiaryRegenerateRequest] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    tone = payload.tone if payload else "reflective"
+    instructions = payload.instructions if payload else None
+    try:
+        updated = await DiaryService.regenerate_entry(
+            user_id=current_user.id,
+            entry_id=entry_id,
+            tone=tone,
+            instructions=instructions,
+            db=db
+        )
+        return DiaryEntryOut.model_validate(updated)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to regenerate diary entry: {str(e)}")
 
 @router.get("/{entry_id}/media")
 def get_entry_media(
