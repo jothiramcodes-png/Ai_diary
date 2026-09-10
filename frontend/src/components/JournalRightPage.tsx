@@ -12,6 +12,7 @@ interface JournalRightPageProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   pendingCommitments: Commitment[];
+  routines?: Routine[];
   onMarkDone: (id: string) => void;
   onViewAllCommitments: () => void;
   onViewAllRoutines: () => void;
@@ -28,6 +29,7 @@ export const JournalRightPage: React.FC<JournalRightPageProps> = ({
   searchQuery,
   onSearchChange,
   pendingCommitments,
+  routines = [],
   onMarkDone,
   onViewAllCommitments,
   onViewAllRoutines,
@@ -142,33 +144,65 @@ export const JournalRightPage: React.FC<JournalRightPageProps> = ({
           </button>
         </div>
 
-        <div className="p-3 rounded-xl bg-[#ede0cb]/80 border border-[#ddcdb6] flex items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800">
-              <Utensils className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#352010]">Friday Lunch</h4>
-              <p className="text-[11px] text-[#6e5138]">ABC Restaurant - Sambar Rice</p>
-              <p className="text-[10px] text-[#8c6e51] font-medium mt-0.5">
-                4 repeated Fridays
-              </p>
-            </div>
-          </div>
+        {routines && routines.length > 0 ? (
+          <div className="space-y-3">
+            {routines.slice(0, 2).map((routine) => {
+              const confPct = Math.round(routine.confidence * 100);
+              return (
+                <div
+                  key={routine.id}
+                  onClick={onViewAllRoutines}
+                  className="p-3 rounded-xl bg-[#ede0cb]/80 border border-[#ddcdb6] flex items-center justify-between gap-3 cursor-pointer hover:border-[#c5b095] transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 shrink-0">
+                      <Utensils className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#352010]">{routine.title}</h4>
+                      <p className="text-[11px] text-[#6e5138]">
+                        {routine.location || routine.activity} {routine.details ? `- ${routine.details}` : ""}
+                      </p>
+                      <p className="text-[10px] text-[#8c6e51] font-medium mt-0.5">
+                        {routine.occurrence_count} repeated {routine.pattern}s
+                      </p>
+                    </div>
+                  </div>
 
-          <div className="w-12 h-12 rounded-full border-4 border-emerald-500 bg-white flex flex-col items-center justify-center shadow-xs">
-            <span className="text-[10px] font-bold text-emerald-800 leading-none">87%</span>
-            <span className="text-[7px] text-zinc-500 uppercase">Conf</span>
-          </div>
-        </div>
+                  <div className="w-12 h-12 rounded-full border-4 border-emerald-500 bg-white flex flex-col items-center justify-center shadow-xs shrink-0">
+                    <span className="text-[10px] font-bold text-emerald-800 leading-none">{confPct}%</span>
+                    <span className="text-[7px] text-zinc-500 uppercase">Conf</span>
+                  </div>
+                </div>
+              );
+            })}
 
-        {/* Deviation Card */}
-        <div className="p-3 rounded-lg bg-[#fff8ea] border border-[#ecdaba] text-xs text-[#6e5138] leading-relaxed">
-          <p className="font-semibold text-amber-900 mb-0.5">Today was different.</p>
-          <p className="text-[11px]">
-            You usually have lunch at ABC Restaurant on Fridays, but today you were travelling to Madurai.
-          </p>
-        </div>
+            {/* Deviation Card if active */}
+            {routines.some((r) => r.deviation_active) && (
+              <div
+                onClick={onViewAllRoutines}
+                className="p-3 rounded-lg bg-[#fff8ea] border border-[#ecdaba] text-xs text-[#6e5138] leading-relaxed cursor-pointer hover:bg-[#fff3db] transition-colors"
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="font-semibold text-amber-900">Today was different.</p>
+                  <span className="text-[10px] text-amber-800 font-bold underline">Tell me more →</span>
+                </div>
+                <p className="text-[11px]">
+                  {routines.find((r) => r.deviation_active)?.deviation_prompt ||
+                    "You missed or changed your usual routine today."}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            onClick={onViewAllRoutines}
+            className="p-4 rounded-xl bg-[#ede0cb]/40 border border-dashed border-[#dfd0ba] text-center cursor-pointer hover:bg-[#ede0cb]/60 transition-colors"
+          >
+            <p className="text-xs font-medium text-[#7a5e45]">No recurring routines detected yet.</p>
+            <p className="text-[10px] text-[#9a7e65] mt-0.5">Click to view life insights & tracking →</p>
+          </div>
+        )}
       </div>
 
       {/* On This Day & Recent Photos */}

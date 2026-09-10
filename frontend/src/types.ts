@@ -77,6 +77,22 @@ export interface Routine {
   deviation_active: boolean;
 }
 
+export interface InsightsData {
+  routines: Routine[];
+  total_memories: number;
+  mood_distribution: Record<string, number>;
+  category_distribution: Record<string, number>;
+  top_people: Array<{ name: string; count: number }>;
+  top_places: Array<{ name: string; count: number }>;
+  commitments_summary: {
+    pending: number;
+    completed: number;
+    total: number;
+  };
+  ai_observations: string[];
+}
+
+
 export interface GraphNode {
   id: string;
   label: string;

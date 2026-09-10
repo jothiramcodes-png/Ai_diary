@@ -10,7 +10,8 @@ import {
   SystemMetrics,
   AuditLogItem,
   PhotoItem,
-  PeopleAndPlacesData
+  PeopleAndPlacesData,
+  InsightsData
 } from "../types";
 
 const API_BASE = "http://127.0.0.1:8000/api/v1";
@@ -217,6 +218,12 @@ export const api = {
       body: JSON.stringify({ action, note })
     });
     if (!res.ok) throw new Error("Failed to respond to deviation");
+    return res.json();
+  },
+
+  async getInsights(): Promise<InsightsData> {
+    const res = await fetch(`${API_BASE}/routines/insights`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch insights");
     return res.json();
   },
 

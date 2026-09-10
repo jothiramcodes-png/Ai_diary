@@ -11,6 +11,7 @@ import { PhotoEntryModal } from "./components/PhotoEntryModal";
 import { DraftReviewModal } from "./components/DraftReviewModal";
 import { LifeGraphModal } from "./components/LifeGraphModal";
 import { PhotosModal } from "./components/PhotosModal";
+import { InsightsModal } from "./components/InsightsModal";
 import { AskLifeBookWidget } from "./components/AskLifeBookWidget";
 import { SettingsModal } from "./components/SettingsModal";
 import { AdminModal } from "./components/AdminModal";
@@ -26,6 +27,7 @@ export const AppContent: React.FC = () => {
   const [textModalOpen, setTextModalOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [photosModalOpen, setPhotosModalOpen] = useState(false);
+  const [insightsModalOpen, setInsightsModalOpen] = useState(false);
   const [graphModalOpen, setGraphModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
@@ -136,6 +138,7 @@ export const AppContent: React.FC = () => {
     setCurrentTab(tab);
     if (tab === "graph") setGraphModalOpen(true);
     else if (tab === "photos") setPhotosModalOpen(true);
+    else if (tab === "insights") setInsightsModalOpen(true);
     else if (tab === "settings" || tab === "privacy") setSettingsModalOpen(true);
     else if (tab === "admin") setAdminModalOpen(true);
     else if (tab === "add_memory") setVoiceModalOpen(true);
@@ -198,9 +201,7 @@ export const AppContent: React.FC = () => {
             onRetryProcessing={handleRetryProcessing}
             onOpenPhotos={() => setPhotosModalOpen(true)}
             onOpenGraph={() => setGraphModalOpen(true)}
-            onTellMeMore={() => {
-              // open conversation with deviation note
-            }}
+            onTellMeMore={() => setInsightsModalOpen(true)}
           />
 
           <JournalRightPage
@@ -208,9 +209,10 @@ export const AppContent: React.FC = () => {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             pendingCommitments={pendingCommitments}
+            routines={routines}
             onMarkDone={handleMarkDone}
             onViewAllCommitments={() => setGraphModalOpen(true)}
-            onViewAllRoutines={() => {}}
+            onViewAllRoutines={() => setInsightsModalOpen(true)}
             onOpenPhotos={() => setPhotosModalOpen(true)}
             notifications={notifications}
             showNotifications={showNotifications}
@@ -259,6 +261,12 @@ export const AppContent: React.FC = () => {
         isOpen={photosModalOpen}
         onClose={() => setPhotosModalOpen(false)}
         onOpenPhotoEntry={() => setPhotoModalOpen(true)}
+      />
+
+      <InsightsModal
+        isOpen={insightsModalOpen}
+        onClose={() => setInsightsModalOpen(false)}
+        onRoutineUpdated={loadData}
       />
 
       <SettingsModal
