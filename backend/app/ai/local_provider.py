@@ -161,6 +161,27 @@ class SmartLocalAIProvider(AIProvider):
         title = self._generate_title(text, places, projects)
         diary_draft = self._generate_polished_narrative(text, people, places, projects, commitments)
 
+        # Tone & Mood Detection (happy, sad, frustrate, annoying, boring, sleepy, sturdy, etc.)
+        mood = "reflective"
+        if any(w in lower for w in ["happy", "joy", "excited", "fun", "celebrat", "awesome", "great", "delighted", "parotta", "smile"]):
+            mood = "happy"
+        elif any(w in lower for w in ["frustrat", "irritat", "headache", "stuck", "bug", "furious", "angry"]):
+            mood = "frustrate"
+        elif any(w in lower for w in ["annoy", "bother", "nag", "delay", "disturb"]):
+            mood = "annoying"
+        elif any(w in lower for w in ["boring", "bored", "dull", "tiresome", "uninteresting"]):
+            mood = "boring"
+        elif any(w in lower for w in ["sleepy", "tired", "exhaust", "drowsy", "fatigue", "yawn"]):
+            mood = "sleepy"
+        elif any(w in lower for w in ["sad", "depress", "unhappy", "cry", "lonely", "grief", "heartbroken"]):
+            mood = "sad"
+        elif any(w in lower for w in ["sturdy", "determined", "resilient", "strong", "firm", "disciplined", "focus", "relentless", "grind"]):
+            mood = "sturdy"
+        elif any(w in lower for w in ["peace", "calm", "serene", "quiet", "ocean", "beach", "sunset"]):
+            mood = "peaceful"
+        elif any(w in lower for w in ["thank", "grateful", "blessed", "relief"]):
+            mood = "grateful"
+
         # Disambiguation Check: If Ravi appears without surname, generate low-confidence disambiguation option
         disambiguation = None
         if "Ravi" in detected_names:
@@ -174,6 +195,7 @@ class SmartLocalAIProvider(AIProvider):
             title=title,
             diary_draft=diary_draft,
             category=category,
+            mood=mood,
             people=people,
             places=places,
             projects=projects,

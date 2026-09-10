@@ -96,9 +96,16 @@ export const DraftReviewModal: React.FC<DraftReviewModalProps> = ({
         {/* Generated Diary Card */}
         <div className="bg-[#f5ecda] border border-[#d9c7ab] rounded-xl p-5 mb-5 shadow-inner">
           <div className="flex items-center justify-between mb-3 border-b border-[#e5d5be] pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#705439]">
-              Generated Diary
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#705439]">
+                Generated Diary
+              </span>
+              {entry.mood && (
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100/90 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-300/60">
+                  Tone: {entry.mood}
+                </span>
+              )}
+            </div>
             <button
               onClick={() => setIsEditing(!isEditing)}
               className="flex items-center gap-1 text-xs text-[#705439] hover:text-[#3d2714] font-medium"

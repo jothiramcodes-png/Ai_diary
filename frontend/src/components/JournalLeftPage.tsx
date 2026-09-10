@@ -183,6 +183,11 @@ export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-[#8a6849]">
               Today's Diary
             </span>
+            {activeEntry?.mood && (
+              <span className="text-[10px] text-emerald-800 bg-emerald-100/90 border border-emerald-300/70 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                Tone: {activeEntry.mood}
+              </span>
+            )}
             {isRegenerating && (
               <span className="text-[10px] text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 animate-pulse">
                 <Sparkles className="w-2.5 h-2.5" /> AI Rewriting...

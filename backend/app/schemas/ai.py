@@ -22,6 +22,7 @@ class AIUnderstandingResult(BaseModel):
     title: str
     diary_draft: str
     category: str
+    mood: Optional[str] = "reflective"
     people: List[ExtractedEntity] = []
     places: List[ExtractedEntity] = []
     projects: List[ExtractedEntity] = []

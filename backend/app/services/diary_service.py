@@ -108,6 +108,7 @@ class DiaryService:
             entry.title = ai_res.title
             entry.generated_content = ai_res.diary_draft
             entry.category = ai_res.category
+            entry.mood = getattr(ai_res, "mood", None) or entry.mood or "reflective"
             entry.confidence = ai_res.confidence
             entry.disambiguation = ai_res.disambiguation
             
