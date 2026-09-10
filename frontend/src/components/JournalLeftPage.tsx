@@ -12,7 +12,8 @@ import {
   Lightbulb,
   BookOpen,
   Sparkles,
-  RotateCcw
+  RotateCcw,
+  Calendar
 } from "lucide-react";
 import { DiaryEntry, User } from "../types";
 import { ProcessingTracker } from "./ProcessingTracker";
@@ -30,6 +31,7 @@ interface JournalLeftPageProps {
   isRegenerating?: boolean;
   onOpenPhotos?: () => void;
   onOpenGraph?: () => void;
+  onOpenCalendar?: () => void;
 }
 
 export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
@@ -45,6 +47,7 @@ export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
   isRegenerating = false,
   onOpenPhotos,
   onOpenGraph,
+  onOpenCalendar,
 }) => {
   return (
     <section className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 overflow-y-auto">
@@ -57,9 +60,16 @@ export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
             </h2>
             <Sun className="w-6 h-6 text-amber-500 fill-amber-400" />
           </div>
-          <p className="text-xs font-semibold text-[#8c6e51] uppercase tracking-wider mt-0.5">
-            September 10, 2026
-          </p>
+          <div
+            onClick={onOpenCalendar}
+            className="group inline-flex items-center gap-1.5 cursor-pointer hover:opacity-85 transition-opacity"
+            title="Open Life Calendar & Daily Memories"
+          >
+            <p className="text-xs font-semibold text-[#8c6e51] group-hover:text-amber-900 uppercase tracking-wider mt-0.5">
+              September 10, 2026
+            </p>
+            <Calendar className="w-3.5 h-3.5 text-[#8c6e51] group-hover:text-amber-900" />
+          </div>
           <p className="text-base text-[#6b492b] font-handwriting mt-1 font-medium">
             Good morning, {user?.full_name?.split(" ")[0] || "Arun"}! Here's what your life looks like today.
           </p>

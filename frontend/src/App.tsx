@@ -12,6 +12,7 @@ import { DraftReviewModal } from "./components/DraftReviewModal";
 import { LifeGraphModal } from "./components/LifeGraphModal";
 import { PhotosModal } from "./components/PhotosModal";
 import { InsightsModal } from "./components/InsightsModal";
+import { CalendarMemoriesModal } from "./components/CalendarMemoriesModal";
 import { AskLifeBookWidget } from "./components/AskLifeBookWidget";
 import { SettingsModal } from "./components/SettingsModal";
 import { AdminModal } from "./components/AdminModal";
@@ -26,6 +27,7 @@ export const AppContent: React.FC = () => {
   const [mobilePageTab, setMobilePageTab] = useState<"left" | "right">("left");
 
   // Modals
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [textModalOpen, setTextModalOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -178,6 +180,7 @@ export const AppContent: React.FC = () => {
     if (tab === "graph") setGraphModalOpen(true);
     else if (tab === "photos") setPhotosModalOpen(true);
     else if (tab === "insights") setInsightsModalOpen(true);
+    else if (tab === "memories") setCalendarModalOpen(true);
     else if (tab === "settings" || tab === "privacy") setSettingsModalOpen(true);
     else if (tab === "admin") setAdminModalOpen(true);
     else if (tab === "add_memory") setVoiceModalOpen(true);
@@ -313,6 +316,7 @@ export const AppContent: React.FC = () => {
               isRegenerating={isRegenerating}
               onOpenPhotos={() => setPhotosModalOpen(true)}
               onOpenGraph={() => setGraphModalOpen(true)}
+              onOpenCalendar={() => setCalendarModalOpen(true)}
               onTellMeMore={() => setInsightsModalOpen(true)}
             />
           </div>
@@ -328,6 +332,7 @@ export const AppContent: React.FC = () => {
               onViewAllCommitments={() => setGraphModalOpen(true)}
               onViewAllRoutines={() => setInsightsModalOpen(true)}
               onOpenPhotos={() => setPhotosModalOpen(true)}
+              onOpenCalendar={() => setCalendarModalOpen(true)}
               notifications={notifications}
               showNotifications={showNotifications}
               onToggleNotifications={() => setShowNotifications(!showNotifications)}
@@ -342,6 +347,12 @@ export const AppContent: React.FC = () => {
       <AskLifeBookWidget />
 
       {/* Modals */}
+      <CalendarMemoriesModal
+        isOpen={calendarModalOpen}
+        onClose={() => setCalendarModalOpen(false)}
+        onOpenAddMemory={() => setVoiceModalOpen(true)}
+        onViewPhoto={() => setPhotosModalOpen(true)}
+      />
       <VoiceRecorderModal
         isOpen={voiceModalOpen}
         onClose={() => setVoiceModalOpen(false)}

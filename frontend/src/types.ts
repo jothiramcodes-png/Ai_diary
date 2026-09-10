@@ -210,3 +210,59 @@ export interface PeopleAndPlacesData {
   places: PlaceEntity[];
 }
 
+export interface CalendarDayEntry {
+  id: string;
+  title: string;
+  category: string;
+  mood?: string;
+  generated_content?: string;
+  raw_text?: string;
+  photo_urls: string[];
+  entry_date: string;
+}
+
+export interface CalendarDayCommitment {
+  id: string;
+  description: string;
+  project?: string;
+  status: string;
+  due_date?: string;
+  priority?: string;
+}
+
+export interface CalendarDayData {
+  date: string;
+  day: number;
+  has_entry: boolean;
+  entries_count: number;
+  dominant_mood?: string | null;
+  is_special: boolean;
+  special_badge?: string | null;
+  entries: CalendarDayEntry[];
+  commitments_count: number;
+  commitments: CalendarDayCommitment[];
+}
+
+export interface SpecialMemoryItem {
+  id: string;
+  title: string;
+  date: string;
+  badge: string;
+  summary: string;
+  photo_url: string;
+  category: string;
+  mood: string;
+  people: string[];
+}
+
+export interface CalendarResponse {
+  year: number;
+  month: number;
+  month_name: string;
+  first_weekday: number;
+  days: CalendarDayData[];
+  monthly_specials: SpecialMemoryItem[];
+  yearly_specials: SpecialMemoryItem[];
+  annual_story: string;
+}
+

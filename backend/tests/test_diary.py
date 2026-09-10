@@ -48,3 +48,21 @@ def test_confirm_entry():
     })
     assert conf_res.status_code == 200
     assert conf_res.json()["status"] == "COMPLETED"
+
+def test_calendar_activities_and_specials():
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get("/api/v1/memories/calendar?year=2026&month=9", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["year"] == 2026
+    assert data["month"] == 9
+    assert data["month_name"] == "September"
+    assert len(data["days"]) == 30
+    assert "monthly_specials" in data
+    assert len(data["monthly_specials"]) >= 1
+    assert "yearly_specials" in data
+    assert len(data["yearly_specials"]) >= 1
+    assert "annual_story" in data
+    assert len(data["annual_story"]) > 20

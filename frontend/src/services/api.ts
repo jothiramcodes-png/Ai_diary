@@ -11,7 +11,8 @@ import {
   AuditLogItem,
   PhotoItem,
   PeopleAndPlacesData,
-  InsightsData
+  InsightsData,
+  CalendarResponse
 } from "../types";
 
 const API_BASE = "http://127.0.0.1:8000/api/v1";
@@ -263,10 +264,18 @@ export const api = {
     return res.json();
   },
 
-  // Memories & On this day
+  // Memories & Calendar
   async getOnThisDay(): Promise<any> {
     const res = await fetch(`${API_BASE}/memories/on-this-day`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to load On This Day memory");
+    return res.json();
+  },
+
+  async getCalendarActivities(year = 2026, month = 9): Promise<CalendarResponse> {
+    const res = await fetch(`${API_BASE}/memories/calendar?year=${year}&month=${month}`, {
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error("Failed to load calendar activities");
     return res.json();
   },
 

@@ -22,6 +22,7 @@ interface JournalRightPageProps {
   selectedMood: string;
   onSelectMood: (m: string) => void;
   onOpenPhotos?: () => void;
+  onOpenCalendar?: () => void;
 }
 
 export const JournalRightPage: React.FC<JournalRightPageProps> = ({
@@ -39,6 +40,7 @@ export const JournalRightPage: React.FC<JournalRightPageProps> = ({
   selectedMood,
   onSelectMood,
   onOpenPhotos,
+  onOpenCalendar,
 }) => {
   return (
     <section className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 overflow-y-auto">
@@ -208,26 +210,32 @@ export const JournalRightPage: React.FC<JournalRightPageProps> = ({
       {/* On This Day & Recent Photos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* On This Day */}
-        <div className="p-4 rounded-xl bg-[#f5ecda] border border-[#e2d2ba]">
+        <div 
+          onClick={onOpenCalendar}
+          className="p-4 rounded-xl bg-[#f5ecda] border border-[#e2d2ba] cursor-pointer hover:border-amber-400 hover:shadow-2xs transition-all group"
+          title="View life calendar & anniversary memories"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#8a6849]">
               On This Day
             </span>
-            <span className="text-[10px] text-[#8a6849] font-medium">Sep 10, 2024</span>
+            <span className="text-[10px] text-[#8a6849] group-hover:text-amber-900 font-medium group-hover:underline">
+              Sep 10, 2024 →
+            </span>
           </div>
 
           <div className="relative rounded-lg overflow-hidden mb-2 border border-[#d5c2a7]">
             <img
               src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&auto=format&fit=crop&q=80"
               alt="Marina Beach"
-              className="w-full h-20 object-cover"
+              className="w-full h-20 object-cover group-hover:scale-103 transition-transform duration-300"
             />
             <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-[9px]">
               Personal
             </span>
           </div>
 
-          <h4 className="text-xs font-bold text-[#352010] font-serif-title">
+          <h4 className="text-xs font-bold text-[#352010] font-serif-title group-hover:text-amber-900 transition-colors">
             A Relaxing Evening at Marina Beach
           </h4>
           <p className="text-[11px] text-[#6e5138] mt-1 leading-snug">
