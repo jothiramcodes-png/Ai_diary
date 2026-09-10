@@ -89,9 +89,12 @@ export const api = {
     return res.json();
   },
 
-  async submitVoice(audioBlob: Blob, filename = "voice.webm"): Promise<DiaryEntry> {
+  async submitVoice(audioBlob: Blob, filename = "voice.webm", transcript?: string): Promise<DiaryEntry> {
     const formData = new FormData();
     formData.append("file", audioBlob, filename);
+    if (transcript && transcript.trim()) {
+      formData.append("transcript", transcript.trim());
+    }
     const res = await fetch(`${API_BASE}/diary/voice`, {
       method: "POST",
       headers: getHeaders(true),

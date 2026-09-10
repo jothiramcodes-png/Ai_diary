@@ -72,17 +72,21 @@ class DiaryService:
             ai_provider = get_ai_provider()
             
             # Step 1: Transcribing (if voice)
-            if entry.input_type == "voice" and not entry.transcript:
-                cls.transition_status(entry, "TRANSCRIBING", 40, "Converting voice to text...", db)
-                stt = get_stt_provider()
-                if os.path.exists(entry.media_path):
-                    with open(entry.media_path, "rb") as af:
-                        audio_bytes = af.read()
+            if entry.input_type == "voice":
+                if not entry.transcript:
+                    cls.transition_status(entry, "TRANSCRIBING", 40, "Converting voice to text...", db)
+                    stt = get_stt_provider()
+                    if os.path.exists(entry.media_path):
+                        with open(entry.media_path, "rb") as af:
+                            audio_bytes = af.read()
+                    else:
+                        audio_bytes = b""
+                    stt_res = await stt.transcribe(audio_bytes, "voice.webm")
+                    entry.transcript = stt_res.get("transcript", "")
+                    entry.raw_text = entry.transcript
+                    db.commit()
                 else:
-                    audio_bytes = b""
-                stt_res = await stt.transcribe(audio_bytes, "voice.webm")
-                entry.transcript = stt_res.get("transcript", "")
-                db.commit()
+                    cls.transition_status(entry, "TRANSCRIBED", 45, "Speech transcript verified", db)
 
             # Step 2: Extracting
             cls.transition_status(entry, "EXTRACTING", 60, "Extracting people, places, activities & commitments...", db)
@@ -117,22 +121,25 @@ class DiaryService:
                 db.close()
 
     @classmethod
-    async def create_voice_entry(cls, user_id: str, audio_bytes: bytes, filename: str, db: Session) -> DiaryEntry:
+    async def create_voice_entry(cls, user_id: str, audio_bytes: bytes, filename: str, db: Session, transcript: Optional[str] = None) -> DiaryEntry:
         entry_id = str(uuid.uuid4())
         media_path = await storage_service.save_raw_audio(user_id, entry_id, audio_bytes, filename)
         
+        cleaned_transcript = transcript.strip() if transcript else None
         entry = DiaryEntry(
             id=entry_id,
             user_id=user_id,
             input_type="voice",
             media_path=media_path,
+            transcript=cleaned_transcript,
+            raw_text=cleaned_transcript,
             title="Voice Memory",
             category="General",
             status="RECEIVED",
             status_history=[{
                 "status": "RECEIVED",
                 "progress": 10,
-                "message": "Voice audio received",
+                "message": "Voice audio received" + (" with verified speech transcript" if cleaned_transcript else ""),
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }]
         )

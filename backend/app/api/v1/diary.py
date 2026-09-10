@@ -37,6 +37,7 @@ async def create_text_entry(
 async def create_voice_entry(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    transcript: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -45,6 +46,7 @@ async def create_voice_entry(
         user_id=current_user.id,
         audio_bytes=audio_bytes,
         filename=file.filename or "voice.webm",
+        transcript=transcript,
         db=db
     )
     background_tasks.add_task(DiaryService.process_entry_ai, entry.id)

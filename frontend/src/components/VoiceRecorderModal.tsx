@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Mic, Square, Play, RotateCcw, X, Sparkles, Volume2 } from "lucide-react";
+import { Mic, Square, Play, RotateCcw, X, Sparkles, Volume2, Globe } from "lucide-react";
 import { api } from "../services/api";
 import { DiaryEntry } from "../types";
 
@@ -18,6 +18,8 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [transcript, setTranscript] = useState("");
+  const [speechLang, setSpeechLang] = useState<string>("en-IN");
   const [isUploading, setIsUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -28,6 +30,7 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -37,7 +40,15 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
 
   const cleanup = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
     }
     clearInterval(timerRef.current);
     if (animationFrameRef.current) {
@@ -50,14 +61,16 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
     setRecordingTime(0);
     setAudioBlob(null);
     setAudioUrl(null);
+    setTranscript("");
     setErrorMsg(null);
   };
 
   const startRecording = async () => {
     try {
       setErrorMsg(null);
+      setTranscript("");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Setup Web Audio API Analyser for live waveform
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const analyser = audioCtx.createAnalyser();
@@ -86,6 +99,56 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
       };
 
       mediaRecorder.start();
+
+      // Start Browser Native Speech Recognition
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.lang = speechLang;
+
+          let accumulated = "";
+
+          recognition.onresult = (event: any) => {
+            let interim = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                accumulated += event.results[i][0].transcript + " ";
+              } else {
+                interim += event.results[i][0].transcript;
+              }
+            }
+            const fullText = (accumulated + interim).trim();
+            if (fullText) {
+              setTranscript(fullText);
+            }
+          };
+
+          recognition.onerror = (e: any) => {
+            if (e.error !== "no-speech") {
+              console.warn("Speech recognition warning:", e.error);
+            }
+          };
+
+          recognition.onend = () => {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+              try {
+                recognition.start();
+              } catch {}
+            }
+          };
+
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (recErr) {
+          console.warn("Speech recognition initialization fallback:", recErr);
+        }
+      }
+
       setIsRecording(true);
 
       // Start timer
@@ -97,8 +160,8 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
       // Start drawing waveform
       drawWaveform();
     } catch (err: any) {
-      console.warn("Microphone access denied or unavailable, providing fallback simulation:", err);
-      setErrorMsg("Microphone permission unavailable. You can use the instant Demo Voice simulation!");
+      console.warn("Microphone access issue:", err);
+      setErrorMsg("Microphone permission unavailable. Please allow microphone access or test with the sample audio button below.");
     }
   };
 
@@ -110,6 +173,11 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
     }
   };
 
@@ -136,9 +204,8 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
       for (let i = 0; i < bufferLength; i++) {
         const barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
 
-        // Gradient green-amber bars matching the journal theme
         const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
-        gradient.addColorStop(0, "#22c55e");
+        gradient.addColorStop(0, "#15803d");
         gradient.addColorStop(1, "#84cc16");
 
         ctx.fillStyle = gradient;
@@ -155,7 +222,7 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
     if (!audioBlob) return;
     setIsUploading(true);
     try {
-      const entry = await api.submitVoice(audioBlob, "voice_memory.webm");
+      const entry = await api.submitVoice(audioBlob, "voice_memory.webm", transcript);
       onEntryCreated(entry);
       onClose();
     } catch (err: any) {
@@ -168,9 +235,9 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
   const handleSimulatedDemoAudio = async () => {
     setIsUploading(true);
     try {
-      // Create a dummy audio blob for demonstration
       const dummyBlob = new Blob([new Uint8Array(1024)], { type: "audio/webm" });
-      const entry = await api.submitVoice(dummyBlob, "sih_ravi_demo.webm");
+      const sampleSpeech = "Today I went to college with Ravi. We worked on our SIH project and decided to finish the API next Wednesday.";
+      const entry = await api.submitVoice(dummyBlob, "sih_ravi_demo.webm", sampleSpeech);
       onEntryCreated(entry);
       onClose();
     } catch (err: any) {
@@ -198,7 +265,7 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <div className="w-12 h-12 rounded-full bg-[#e8dac1] text-[#4d3319] flex items-center justify-center mx-auto mb-2 shadow-inner">
             <Mic className="w-6 h-6" />
           </div>
@@ -206,17 +273,42 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
             Record Daily Memory
           </h3>
           <p className="text-xs text-[#7d654c]">
-            Speak naturally. LifeBook will transcribe, extract entities, and craft your diary draft.
+            Speak your day naturally. LifeBook transcribes your speech in real time and crafts a warm first-person journal entry.
           </p>
         </div>
 
+        {/* Language Selection */}
+        <div className="flex items-center justify-center gap-1.5 mb-3">
+          <Globe className="w-3.5 h-3.5 text-[#8a6849]" />
+          <span className="text-[11px] text-[#7d654c] font-semibold mr-1">Language:</span>
+          {[
+            { id: "en-IN", label: "English (India)" },
+            { id: "en-US", label: "English (US)" },
+            { id: "ta-IN", label: "Tamil (தமிழ்)" }
+          ].map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              disabled={isRecording}
+              onClick={() => setSpeechLang(l.id)}
+              className={`text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                speechLang === l.id
+                  ? "bg-[#3d2714] text-amber-100 border-[#3d2714] font-bold shadow-xs"
+                  : "bg-[#f2e7d3] text-[#543b23] border-[#d8c5aa] hover:bg-[#eadecb]"
+              } disabled:opacity-50`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+
         {/* Live Audio Waveform Canvas */}
-        <div className="bg-[#f2e7d3] border border-[#d8c5aa] rounded-xl p-4 mb-5 flex flex-col items-center justify-center min-h-[120px]">
+        <div className="bg-[#f2e7d3] border border-[#d8c5aa] rounded-xl p-3.5 mb-3.5 flex flex-col items-center justify-center min-h-[100px]">
           <canvas
             ref={canvasRef}
-            width={280}
-            height={60}
-            className="w-full max-w-[280px] h-[60px]"
+            width={320}
+            height={48}
+            className="w-full max-w-[320px] h-[48px]"
           />
 
           <div className="mt-2 text-sm font-mono font-bold text-[#5c3e21]">
@@ -226,18 +318,58 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
           {isRecording && (
             <div className="flex items-center gap-1.5 text-xs text-red-600 font-semibold animate-pulse mt-1">
               <span className="w-2 h-2 rounded-full bg-red-600" />
-              <span>Recording live audio...</span>
+              <span>Recording microphone & transcribing speech...</span>
             </div>
           )}
         </div>
 
-        {audioUrl && !isRecording && (
-          <div className="mb-4 bg-[#eadecb] p-3 rounded-lg flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#543b23]">
-              <Volume2 className="w-4 h-4 text-emerald-600" />
-              <span>Recording Preview Ready</span>
+        {/* Live Speech Recognition Box (while recording) */}
+        {isRecording && (
+          <div className="mb-3.5 p-3.5 bg-emerald-50/90 border border-emerald-300 rounded-xl text-left shadow-inner transition-all">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                Live Speech Transcription
+              </span>
+              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                Listening ({speechLang === "ta-IN" ? "Tamil" : speechLang === "en-IN" ? "Indian English" : "US English"})
+              </span>
             </div>
-            <audio src={audioUrl} controls className="h-8 max-w-[180px]" />
+            <p className="text-xs sm:text-sm font-serif-title text-[#1f351c] min-h-[44px] leading-relaxed italic">
+              {transcript ? `"${transcript}"` : "Speak clearly into your microphone... your words will appear here live in real-time."}
+            </p>
+          </div>
+        )}
+
+        {/* Audio Player and Editable Transcript (after recording stops) */}
+        {audioUrl && !isRecording && (
+          <div className="mb-4 space-y-3">
+            <div className="bg-[#eadecb] p-2.5 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#543b23]">
+                <Volume2 className="w-4 h-4 text-emerald-700" />
+                <span>Audio Playback</span>
+              </div>
+              <audio src={audioUrl} controls className="h-8 max-w-[200px]" />
+            </div>
+
+            <div className="p-3 bg-white/95 border border-[#d8c5aa] rounded-xl text-left shadow-xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#7d654c] flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  Transcribed Words (Review or Edit)
+                </span>
+                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+                  {transcript ? "Transcribed" : "Type notes if needed"}
+                </span>
+              </div>
+              <textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                placeholder="Transcribed voice text... You can also edit or add extra details here before sending to AI."
+                rows={3}
+                className="w-full text-xs sm:text-sm font-serif-title text-[#3d2714] bg-[#fbf7ee] p-2.5 rounded-lg border border-[#e2d2bc] focus:outline-none focus:ring-1 focus:ring-amber-700 resize-none leading-relaxed"
+              />
+            </div>
           </div>
         )}
 
@@ -248,24 +380,24 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
         )}
 
         {/* Action Controls */}
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center gap-3 pt-1">
           {!isRecording && !audioBlob && (
             <button
               onClick={startRecording}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-md transition-all active:scale-95"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
             >
               <Mic className="w-4 h-4" />
-              <span>Start Recording</span>
+              <span>Start Speaking</span>
             </button>
           )}
 
           {isRecording && (
             <button
               onClick={stopRecording}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md transition-all active:scale-95 animate-bounce"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md transition-all active:scale-95 animate-pulse cursor-pointer"
             >
               <Square className="w-4 h-4 fill-white" />
-              <span>Stop Recording</span>
+              <span>Finish Speaking</span>
             </button>
           )}
 
@@ -273,7 +405,7 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
             <>
               <button
                 onClick={startRecording}
-                className="p-2.5 rounded-full bg-[#ebdcc4] hover:bg-[#decbb0] text-[#543b23] transition-colors"
+                className="p-2.5 rounded-full bg-[#ebdcc4] hover:bg-[#decbb0] text-[#543b23] transition-colors cursor-pointer"
                 title="Re-record"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -282,26 +414,27 @@ export const VoiceRecorderModal: React.FC<VoiceRecorderModalProps> = ({
               <button
                 onClick={handleSubmit}
                 disabled={isUploading}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#4a321d] hover:bg-[#342211] text-amber-100 font-semibold text-sm shadow-md transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#4a321d] hover:bg-[#342211] text-amber-100 font-semibold text-sm shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>{isUploading ? "Uploading..." : "Understand with AI"}</span>
+                <span>{isUploading ? "Processing Memory..." : "Understand with AI"}</span>
               </button>
             </>
           )}
         </div>
 
         {/* Hackathon Fast-Track Button */}
-        <div className="mt-5 pt-4 border-t border-[#e5d5be] text-center">
+        <div className="mt-4 pt-3 border-t border-[#e5d5be] text-center">
           <button
             onClick={handleSimulatedDemoAudio}
             disabled={isUploading}
-            className="text-xs text-[#8c6f52] hover:text-[#4d3319] underline font-medium"
+            className="text-xs text-[#8c6f52] hover:text-[#4d3319] underline font-medium cursor-pointer"
           >
-            ??? Or run the SIH / Ravi Live Demo recording instantly ?
+            ✨ Or test with sample voice recording (SIH Hackathon & Ravi)
           </button>
         </div>
       </div>
     </div>
   );
 };
+
