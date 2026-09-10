@@ -135,7 +135,9 @@ def get_calendar_activities(
                     "project": c.project,
                     "status": c.status,
                     "due_date": c.due_date,
-                    "priority": c.priority
+                    "priority": c.priority,
+                    "activity_thread": getattr(c, "activity_thread", None),
+                    "next_action": getattr(c, "next_action", None)
                 }
                 for c in day_commitments
             ]

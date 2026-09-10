@@ -56,6 +56,8 @@ export interface Commitment {
   confidence: number;
   status: "PENDING" | "COMPLETED" | "RESCHEDULED" | "DISMISSED";
   priority: string;
+  activity_thread?: string;
+  next_action?: string;
   created_at: string;
   updated_at: string;
 }
@@ -229,6 +231,8 @@ export interface CalendarDayCommitment {
   status: string;
   due_date?: string;
   priority?: string;
+  activity_thread?: string;
+  next_action?: string;
 }
 
 export interface CalendarDayData {

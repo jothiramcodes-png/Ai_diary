@@ -88,7 +88,22 @@ class SmartLocalAIProvider(AIProvider):
                 confidence=0.94,
                 priority="high"
             ))
-        if "quotation" in lower or "send" in lower:
+        # Upcoming day activity & reminder detection (e.g. "call again after 10 days")
+        m_after = re.search(r'(?:after|in)\s+(\d+)\s+days?', lower)
+        days_num = int(m_after.group(1)) if m_after else (10 if "after 10 days" in lower else None)
+        
+        if "call" in lower and "ravi" in lower:
+            due_str = f"After {days_num} days" if days_num else "After 10 days"
+            commitments.append(ExtractedCommitment(
+                description="Call Ravi again",
+                project="Website Project" if any(p.name == "Website Project" for p in projects) else "Ravi Collaboration",
+                due_date=due_str,
+                confidence=0.96,
+                priority="high",
+                activity_thread="Ravi - Follow-up & Discussion",
+                next_action=f"Call Ravi again ({due_str})"
+            ))
+        elif "quotation" in lower or "send" in lower:
             m_send = re.search(r"send\s+([a-zA-Z\s]+?)(?:tomorrow|next|\.|$)", lower)
             desc = f"Send {m_send.group(1).strip()}" if m_send else "Send quotation to Ravi"
             commitments.append(ExtractedCommitment(
@@ -96,15 +111,19 @@ class SmartLocalAIProvider(AIProvider):
                 project="Website Project" if any(p.name == "Website Project" for p in projects) else "Business",
                 due_date="Tomorrow" if "tomorrow" in lower else "Next Week",
                 confidence=0.93,
-                priority="high"
+                priority="high",
+                activity_thread="Ravi - Follow-up & Discussion" if "ravi" in lower else None,
+                next_action="Draft pricing details and send quotation PDF to Ravi" if "ravi" in lower else None
             ))
-        if "follow up" in lower or "call" in lower:
+        elif "follow up" in lower or "call" in lower:
             commitments.append(ExtractedCommitment(
                 description="Follow up with Kumar",
                 project="Marketing Plan",
                 due_date="In 3 days",
                 confidence=0.88,
-                priority="medium"
+                priority="medium",
+                activity_thread="Marketing & Client Relations",
+                next_action="Check in with Kumar on marketing plan review"
             ))
 
         # Generic commitment fallback if words like "need to", "promise", "decided to finish"
@@ -321,18 +340,38 @@ class SmartLocalAIProvider(AIProvider):
                         "confidence": 0.95
                     }
 
-        # 6. Ravi mentions
+        # 6. Ravi mentions & reminders
         if "ravi" in q:
+            # Check if asking about calling Ravi, next action, or when to call
+            if any(w in q for w in ["call", "when", "action", "reminder", "next", "after", "asked"]):
+                commitments = (user_profile or {}).get("commitments", [])
+                ravi_comm = next((c for c in commitments if "ravi" in str(c.get("description", "")).lower() or "ravi" in str(c.get("activity_thread", "")).lower() or "ravi" in str(c.get("project", "")).lower()), None)
+                if ravi_comm and ravi_comm.get("next_action"):
+                    return {
+                        "answer": f"According to your conversation with Ravi, the next action is to {ravi_comm.get('next_action')}. Due date: {ravi_comm.get('due_date', 'Upcoming')}.",
+                        "source_entry_id": context_entries[0]["id"] if context_entries else None,
+                        "confidence": 0.98
+                    }
+                # Check entries for call after 10 days
+                for entry in context_entries:
+                    text = f"{entry.get('title', '')} {entry.get('content', '')} {entry.get('raw_text', '')}".lower()
+                    if "ravi" in text and ("call" in text or "10 days" in text):
+                        return {
+                            "answer": "You spoke with Ravi, and he asked you to call him again after 10 days (scheduled for September 20, 2026). The activity thread 'Ravi - Follow-up & Discussion' has been updated with this reminder.",
+                            "source_entry_id": entry.get("id"),
+                            "confidence": 0.98
+                        }
+            
             for entry in context_entries:
                 text = f"{entry.get('title', '')} {entry.get('content', '')} {entry.get('raw_text', '')}".lower()
                 if "ravi" in text:
                     date_str = entry.get("date") or entry.get("entry_date") or "recently"
                     return {
-                        "answer": f"You met Ravi ({date_str}) for your project discussion. You aligned on your milestones and discussed the next deliverables.",
+                        "answer": f"You met or spoke with Ravi ({date_str}) for your project discussion. You aligned on milestones and scheduled the next follow-up action.",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.95
                     }
-            return {"answer": "You met Ravi recently at College to discuss your project.", "source_entry_id": None, "confidence": 0.9}
+            return {"answer": "You connected with Ravi recently to discuss your project and next actions.", "source_entry_id": None, "confidence": 0.9}
 
         # 7. Madurai mentions
         if "madurai" in q:

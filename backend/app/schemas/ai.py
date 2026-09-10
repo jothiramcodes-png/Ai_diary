@@ -13,6 +13,10 @@ class ExtractedCommitment(BaseModel):
     due_date: Optional[str] = None
     confidence: float = 0.90
     priority: str = "high"
+    activity_thread: Optional[str] = None
+    next_action: Optional[str] = None
+    person: Optional[str] = None
+    target_date: Optional[str] = None  # YYYY-MM-DD
 
 class AIUnderstandingResult(BaseModel):
     title: str

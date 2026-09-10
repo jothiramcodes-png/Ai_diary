@@ -12,6 +12,8 @@ class CommitmentOut(BaseModel):
     confidence: float
     status: str  # PENDING, COMPLETED, RESCHEDULED, DISMISSED
     priority: str
+    activity_thread: Optional[str] = None
+    next_action: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

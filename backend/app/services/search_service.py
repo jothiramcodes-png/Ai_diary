@@ -67,7 +67,9 @@ class SearchService:
                     "description": c.description,
                     "project": c.project or "General",
                     "due_date": c.due_date or "Upcoming",
-                    "priority": c.priority or "medium"
+                    "priority": c.priority or "medium",
+                    "activity_thread": getattr(c, "activity_thread", None),
+                    "next_action": getattr(c, "next_action", None)
                 }
                 for c in commitments
             ],

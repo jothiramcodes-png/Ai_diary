@@ -100,7 +100,9 @@ Return ONLY valid JSON.
                         project=c.get('project', 'General'),
                         due_date=c.get('due_date', 'Upcoming'),
                         confidence=c.get('confidence', 0.9),
-                        priority=c.get('priority', 'medium')
+                        priority=c.get('priority', 'high' if 'call' in c.get('description', '').lower() or 'quotation' in c.get('description', '').lower() else 'medium'),
+                        activity_thread=c.get('activity_thread'),
+                        next_action=c.get('next_action')
                     ) for c in data.get('commitments', []) if c.get('description')
                 ]
                 tags = [data.get('category', 'Personal')]

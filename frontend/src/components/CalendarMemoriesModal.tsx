@@ -447,10 +447,22 @@ export const CalendarMemoriesModal: React.FC<CalendarMemoriesModalProps> = ({
                               >
                                 <div>
                                   <p className="font-semibold text-[#352010]">{c.description}</p>
-                                  {c.project && (
-                                    <span className="text-[10px] text-amber-800 font-medium">
-                                      Project: {c.project}
-                                    </span>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                    {c.project && (
+                                      <span className="text-[10px] text-amber-800 font-medium">
+                                        Project: {c.project}
+                                      </span>
+                                    )}
+                                    {c.activity_thread && (
+                                      <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[9px] font-semibold border border-amber-200">
+                                        🧵 {c.activity_thread}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {c.next_action && (
+                                    <p className="text-[10px] text-amber-900 font-medium mt-1 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50">
+                                      ⚡ Next: {c.next_action}
+                                    </p>
                                   )}
                                 </div>
                                 <span

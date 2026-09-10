@@ -114,7 +114,19 @@ export const JournalRightPage: React.FC<JournalRightPageProps> = ({
             >
               <div className="pr-2">
                 <p className="text-xs font-bold text-[#352010]">{comm.description}</p>
-                <p className="text-[11px] text-[#705439]">{comm.project || "Personal"}</p>
+                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                  <span className="text-[11px] text-[#705439]">{comm.project || "Personal"}</span>
+                  {comm.activity_thread && (
+                    <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[9px] font-semibold border border-amber-200">
+                      🧵 {comm.activity_thread}
+                    </span>
+                  )}
+                </div>
+                {comm.next_action && (
+                  <p className="text-[10px] text-amber-900 font-medium mt-1 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50">
+                    ⚡ Next: {comm.next_action}
+                  </p>
+                )}
                 <div className="flex items-center gap-1 text-[10px] text-red-700 font-semibold mt-1">
                   <Calendar className="w-3 h-3 text-red-600" />
                   <span>{comm.due_date || "Upcoming"}</span>

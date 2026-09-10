@@ -17,9 +17,10 @@ class Commitment(Base):
     resolved_due_date = Column(DateTime, nullable=True)
     confidence = Column(Float, default=0.90)
     
-    # Statuses: PENDING, COMPLETED, RESCHEDULED, DISMISSED
     status = Column(String(50), default="PENDING", index=True)
     priority = Column(String(20), default="high")
+    activity_thread = Column(String(255), nullable=True)
+    next_action = Column(String(500), nullable=True)
     
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
