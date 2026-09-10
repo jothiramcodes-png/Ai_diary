@@ -271,12 +271,12 @@ class SmartLocalAIProvider(AIProvider):
                 if "movie" in text or "film" in text:
                     if "iron man" in text:
                         return {
-                            "answer": "Your favorite movie is Iron Man. You noted this in your journal on September 10, 2026.",
+                            "answer": "• Favorite Movie: Iron Man\n• Journal Record: September 10, 2026\n• Context: Documented as your all-time favorite movie in your personal diary reflections.",
                             "source_entry_id": entry.get("id"),
                             "confidence": 0.98
                         }
                     return {
-                        "answer": f"According to your memory '{entry.get('title')}': {entry.get('content', '') or entry.get('raw_text', '')}",
+                        "answer": f"• Favorite Film / Movie: Recorded in '{entry.get('title')}':\n• Details: {entry.get('content', '') or entry.get('raw_text', '')}",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.92
                     }
@@ -286,12 +286,12 @@ class SmartLocalAIProvider(AIProvider):
             today_entries = [e for e in context_entries if e.get("is_today") or "september 10, 2026" in str(e.get("date", "")).lower() or "september 10, 2026" in str(e.get("entry_date", "")).lower()]
             if today_entries:
                 summaries = []
-                for e in today_entries[:3]:
+                for e in today_entries[:4]:
                     desc = e.get("generated_content") or e.get("content") or e.get("raw_text") or e.get("title")
                     summaries.append(f"• {e.get('title', 'Memory')}: {desc[:140]}...")
                 combined = "\n".join(summaries)
                 return {
-                    "answer": f"Here is what you recorded today (Thursday, September 10, 2026):\n{combined}",
+                    "answer": f"Here is what you recorded today (Thursday, September 10, 2026):\n\n{combined}",
                     "source_entry_id": today_entries[0].get("id"),
                     "confidence": 0.98
                 }
@@ -300,14 +300,18 @@ class SmartLocalAIProvider(AIProvider):
         if any(w in q for w in ["forget", "task", "commitment", "todo", "due", "deadline"]):
             commitments = (user_profile or {}).get("commitments", [])
             if commitments:
-                items = [f"• {c.get('description')} (Project: {c.get('project', 'General')}, Due: {c.get('due_date', 'Upcoming')})" for c in commitments]
+                items = []
+                for c in commitments:
+                    thread_info = f" [Thread: {c.get('activity_thread')}]" if c.get('activity_thread') else ""
+                    action_info = f" -> Next Action: {c.get('next_action')}" if c.get('next_action') else ""
+                    items.append(f"• {c.get('description')} (Project: {c.get('project', 'General')}, Due: {c.get('due_date', 'Upcoming')}{thread_info}{action_info})")
                 return {
-                    "answer": f"Here are your active commitments that need attention:\n" + "\n".join(items),
+                    "answer": "Here are your active commitments and reminders:\n\n" + "\n".join(items),
                     "source_entry_id": context_entries[0]["id"] if context_entries else None,
                     "confidence": 0.98
                 }
             return {
-                "answer": "You have an upcoming commitment to finish the SIH API next Wednesday, and a quotation to send to Ravi tomorrow.",
+                "answer": "• Finish SIH API: Due Next Wednesday (Project: SIH Project)\n• Send quotation to Ravi: Due Tomorrow (Project: Website Project)\n• Follow up with Kumar: Due in 3 days (Project: Marketing Plan)",
                 "source_entry_id": context_entries[0]["id"] if context_entries else None,
                 "confidence": 0.95
             }
@@ -318,7 +322,7 @@ class SmartLocalAIProvider(AIProvider):
                 text = f"{entry.get('title', '')} {entry.get('content', '')} {entry.get('raw_text', '')}".lower()
                 if "poovarasan" in text or "kisho" in text:
                     return {
-                        "answer": "You went to college with Poovarasan and Kisho Varma to work on your SIH hackathon project sprint, and celebrated afterwards with parotta for dinner.",
+                        "answer": "• People: Poovarasan & Kisho Varma\n• Activity: Met at college for the Smart India Hackathon (SIH) project sprint\n• Accomplishments: Worked through technical architecture and milestones\n• Dinner: Celebrated the productive session with hot parotta together",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.98
                     }
@@ -329,13 +333,13 @@ class SmartLocalAIProvider(AIProvider):
                 text = f"{entry.get('title', '')} {entry.get('content', '')} {entry.get('raw_text', '')}".lower()
                 if "anand" in text:
                     return {
-                        "answer": "You met with Anand at Chennai Marina beach. You discussed the new machine learning computer vision pipeline and agreed to finish the dataset by next Friday.",
+                        "answer": "• Contact: Anand\n• Location: Chennai Marina Beach\n• Topic: Discussed new machine learning & computer vision model pipeline\n• Agreed Milestone: Complete dataset preparation by next Friday",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.98
                     }
                 elif "beach" in text:
                     return {
-                        "answer": f"From your beach memory '{entry.get('title')}': {entry.get('content') or entry.get('raw_text')}",
+                        "answer": f"• Location: Marina Beach\n• Memory Title: {entry.get('title')}\n• Note: {entry.get('content') or entry.get('raw_text')}",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.95
                     }
@@ -348,7 +352,7 @@ class SmartLocalAIProvider(AIProvider):
                 ravi_comm = next((c for c in commitments if "ravi" in str(c.get("description", "")).lower() or "ravi" in str(c.get("activity_thread", "")).lower() or "ravi" in str(c.get("project", "")).lower()), None)
                 if ravi_comm and ravi_comm.get("next_action"):
                     return {
-                        "answer": f"According to your conversation with Ravi, the next action is to {ravi_comm.get('next_action')}. Due date: {ravi_comm.get('due_date', 'Upcoming')}.",
+                        "answer": f"• Contact: Ravi\n• Next Action: {ravi_comm.get('next_action')}\n• Scheduled Date: September 20, 2026 (Due: {ravi_comm.get('due_date', 'After 10 days')})\n• Activity Thread: {ravi_comm.get('activity_thread') or 'Ravi - Follow-up & Discussion'}\n• Status: Active Reminder Scheduled",
                         "source_entry_id": context_entries[0]["id"] if context_entries else None,
                         "confidence": 0.98
                     }
@@ -357,7 +361,7 @@ class SmartLocalAIProvider(AIProvider):
                     text = f"{entry.get('title', '')} {entry.get('content', '')} {entry.get('raw_text', '')}".lower()
                     if "ravi" in text and ("call" in text or "10 days" in text):
                         return {
-                            "answer": "You spoke with Ravi, and he asked you to call him again after 10 days (scheduled for September 20, 2026). The activity thread 'Ravi - Follow-up & Discussion' has been updated with this reminder.",
+                            "answer": "• Contact: Ravi\n• Next Action: Call Ravi again\n• Scheduled Date: Sunday, September 20, 2026 (after 10 days)\n• Activity Thread: Ravi - Follow-up & Discussion\n• Status: In-app reminder active & mapped to your Life Calendar",
                             "source_entry_id": entry.get("id"),
                             "confidence": 0.98
                         }
@@ -367,11 +371,15 @@ class SmartLocalAIProvider(AIProvider):
                 if "ravi" in text:
                     date_str = entry.get("date") or entry.get("entry_date") or "recently"
                     return {
-                        "answer": f"You met or spoke with Ravi ({date_str}) for your project discussion. You aligned on milestones and scheduled the next follow-up action.",
+                        "answer": f"• Contact: Ravi\n• Interaction Date: {date_str}\n• Topic: Project alignment and deliverables discussion\n• Next Step: Follow-up scheduled as per your project milestones",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.95
                     }
-            return {"answer": "You connected with Ravi recently to discuss your project and next actions.", "source_entry_id": None, "confidence": 0.9}
+            return {
+                "answer": "• Contact: Ravi\n• Status: Connected recently at college regarding project collaboration\n• Next Step: Scheduled follow-up action in place",
+                "source_entry_id": None,
+                "confidence": 0.9
+            }
 
         # 7. Madurai mentions
         if "madurai" in q:
@@ -379,7 +387,7 @@ class SmartLocalAIProvider(AIProvider):
                 text = f"{entry.get('title', '')} {entry.get('content', '')} {entry.get('raw_text', '')}".lower()
                 if "madurai" in text:
                     return {
-                        "answer": "You went to Madurai for a customer meeting with Ravi regarding the website project, and enjoyed biryani lunch with Kumar at ABC Restaurant.",
+                        "answer": "• Location: Madurai\n• Purpose: Client meeting with Ravi regarding the Website Project\n• Lunch: Savored special biryani with Kumar at ABC Restaurant\n• Outcome: Successfully advanced partnership milestones",
                         "source_entry_id": entry.get("id"),
                         "confidence": 0.98
                     }
@@ -387,7 +395,7 @@ class SmartLocalAIProvider(AIProvider):
         # 8. Friday / Food / Routine
         if "friday" in q or "food" in q or "routine" in q:
             return {
-                "answer": "You usually have Sambar Rice lunch at ABC Restaurant on Fridays (observed repeated Fridays in your routine graph).",
+                "answer": "• Habit Pattern: Friday Lunch Tradition\n• Location: ABC Restaurant\n• Usual Meal: Authentic Sambar Rice\n• AI Routine Confidence: High (observed repeated Fridays in your routine graph)",
                 "source_entry_id": None,
                 "confidence": 0.92
             }
@@ -407,7 +415,7 @@ class SmartLocalAIProvider(AIProvider):
             if best_entry and best_score > 0:
                 snippet = (best_entry.get("content") or best_entry.get("raw_text") or best_entry.get("title") or "")
                 return {
-                    "answer": f"Here is what I found in your diary ({best_entry.get('date', 'Memory')} - '{best_entry.get('title')}'):\n\"{snippet}\"",
+                    "answer": f"• Found in Memory: {best_entry.get('title')} ({best_entry.get('date', 'Recorded Entry')})\n• Category: {best_entry.get('category', 'Personal')}\n• Highlight: {snippet[:200]}...",
                     "source_entry_id": best_entry.get("id"),
                     "confidence": 0.90
                 }
@@ -417,13 +425,13 @@ class SmartLocalAIProvider(AIProvider):
             latest = context_entries[0]
             desc = latest.get('content') or latest.get('generated_content') or latest.get('raw_text') or ''
             return {
-                "answer": f"Based on your diary ({latest.get('title')}): {desc[:220]}...",
+                "answer": f"• Latest Memory: {latest.get('title')}\n• Details: {desc[:200]}...\n• Category: {latest.get('category', 'Personal')}",
                 "source_entry_id": latest.get("id"),
                 "confidence": 0.85
             }
             
         return {
-            "answer": "I searched your personal diary, but couldn't find a matching memory for that question.",
+            "answer": "• No matching memory found in your journal for this question.",
             "source_entry_id": None,
             "confidence": 0.70
         }

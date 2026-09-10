@@ -115,7 +115,7 @@ export const AskLifeBookWidget: React.FC = () => {
             className={`flex flex-col ${m.sender === "user" ? "items-end" : "items-start"}`}
           >
             <div
-              className={`px-3 py-2 rounded-xl max-w-[90%] leading-relaxed ${
+              className={`px-3 py-2 rounded-xl max-w-[90%] leading-relaxed whitespace-pre-line ${
                 m.sender === "user"
                   ? "bg-emerald-700 text-white font-medium"
                   : "bg-zinc-800/90 text-zinc-200 border border-zinc-700/60"
