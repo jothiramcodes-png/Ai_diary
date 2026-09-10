@@ -41,7 +41,7 @@ export const JournalRightPage: React.FC<JournalRightPageProps> = ({
   onOpenPhotos,
 }) => {
   return (
-    <section className="flex-1 p-6 md:p-8 lg:p-10 space-y-6 overflow-y-auto">
+    <section className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 overflow-y-auto">
       {/* Top Search Bar & Header Icons */}
       <div className="flex items-center justify-between gap-3 border-b border-[#ebdcc4] pb-4">
         <div className="flex-1 relative">

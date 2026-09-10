@@ -11,7 +11,7 @@ interface Message {
 }
 
 export const AskLifeBookWidget: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -90,7 +90,7 @@ export const AskLifeBookWidget: React.FC = () => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-[#18181b] text-white shadow-2xl hover:bg-black transition-all hover:scale-105 border border-zinc-700"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-[#18181b] text-white shadow-2xl hover:bg-black transition-all hover:scale-105 border border-zinc-700"
       >
         <Sparkles className="w-4 h-4 text-emerald-400" />
         <span className="text-xs font-bold">Ask LifeBook</span>
@@ -99,7 +99,7 @@ export const AskLifeBookWidget: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-80 sm:w-88 bg-[#18181b] text-zinc-100 rounded-2xl shadow-2xl border border-zinc-700/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
+    <div className="fixed bottom-3 right-3 left-3 sm:left-auto sm:bottom-6 sm:right-6 z-40 w-auto sm:w-88 max-h-[82vh] sm:max-h-[600px] bg-[#18181b] text-zinc-100 rounded-2xl shadow-2xl border border-zinc-700/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#27272a] border-b border-zinc-700/50">
         <div className="flex items-center gap-2">

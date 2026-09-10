@@ -42,7 +42,7 @@ export const JournalLeftPage: React.FC<JournalLeftPageProps> = ({
   onOpenGraph,
 }) => {
   return (
-    <section className="flex-1 p-6 md:p-8 lg:p-10 space-y-6 overflow-y-auto">
+    <section className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 overflow-y-auto">
       {/* Top Date Header & Handwritten Greeting */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#ebdcc4] pb-4">
         <div>

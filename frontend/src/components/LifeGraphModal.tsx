@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   X,
   ZoomIn,
@@ -132,12 +132,12 @@ export const LifeGraphModal: React.FC<LifeGraphModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             {/* View Tab Switcher */}
-            <div className="flex items-center bg-[#ebdcc4] p-1 rounded-xl border border-[#d8c5aa] text-xs font-medium">
+            <div className="flex items-center bg-[#ebdcc4] p-1 rounded-xl border border-[#d8c5aa] text-xs font-medium overflow-x-auto max-w-full">
               <button
                 onClick={() => setActiveTab("graph")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === "graph"
                     ? "bg-[#80502c] text-white shadow-xs font-semibold"
                     : "text-[#6b5038] hover:text-[#382312]"
@@ -148,7 +148,7 @@ export const LifeGraphModal: React.FC<LifeGraphModalProps> = ({
               </button>
               <button
                 onClick={() => setActiveTab("people")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === "people"
                     ? "bg-[#80502c] text-white shadow-xs font-semibold"
                     : "text-[#6b5038] hover:text-[#382312]"
@@ -159,7 +159,7 @@ export const LifeGraphModal: React.FC<LifeGraphModalProps> = ({
               </button>
               <button
                 onClick={() => setActiveTab("places")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === "places"
                     ? "bg-[#80502c] text-white shadow-xs font-semibold"
                     : "text-[#6b5038] hover:text-[#382312]"
@@ -172,7 +172,7 @@ export const LifeGraphModal: React.FC<LifeGraphModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-[#8c7155] hover:text-[#382312] rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
+              className="p-1.5 text-[#8c7155] hover:text-[#382312] rounded-lg hover:bg-black/5 transition-colors cursor-pointer shrink-0"
             >
               <X className="w-5 h-5" />
             </button>

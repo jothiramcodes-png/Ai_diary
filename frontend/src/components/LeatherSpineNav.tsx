@@ -12,7 +12,8 @@ import {
   Shield,
   Settings,
   ShieldCheck,
-  LogOut
+  LogOut,
+  X
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -20,12 +21,16 @@ interface LeatherSpineNavProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
   pendingCommitmentsCount: number;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const LeatherSpineNav: React.FC<LeatherSpineNavProps> = ({
   currentTab,
   onSelectTab,
-  pendingCommitmentsCount
+  pendingCommitmentsCount,
+  isOpenMobile = false,
+  onCloseMobile
 }) => {
   const { user, logout } = useAuth();
 
@@ -47,20 +52,38 @@ export const LeatherSpineNav: React.FC<LeatherSpineNavProps> = ({
     navItems.push({ id: "admin", label: "Admin Console", icon: ShieldCheck, badge: 0 });
   }
 
-  return (
-    <aside className="w-56 md:w-64 min-h-screen leather-spine text-amber-100 flex flex-col justify-between py-6 select-none shrink-0 relative z-20">
+  const handleItemClick = (id: string) => {
+    onSelectTab(id);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const renderNavContent = (isMobileDrawer = false) => (
+    <>
       <div>
         {/* Brand Header */}
-        <div className="px-5 mb-8">
-          <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="w-6 h-6 text-amber-400" />
-            <h1 className="text-xl font-bold font-book-brand tracking-wider text-amber-200">
-              LifeBook AI
-            </h1>
+        <div className="px-5 mb-8 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <BookOpen className="w-6 h-6 text-amber-400" />
+              <h1 className="text-xl font-bold font-book-brand tracking-wider text-amber-200">
+                LifeBook AI
+              </h1>
+            </div>
+            <p className="text-xs text-amber-300/70 italic font-serif-title">
+              Your life, remembered.
+            </p>
           </div>
-          <p className="text-xs text-amber-300/70 italic font-serif-title">
-            Your life, remembered.
-          </p>
+
+          {isMobileDrawer && (
+            <button
+              onClick={onCloseMobile}
+              className="p-1 rounded-lg text-amber-300/80 hover:text-white hover:bg-black/30 md:hidden"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Items */}
@@ -77,7 +100,7 @@ export const LeatherSpineNav: React.FC<LeatherSpineNavProps> = ({
                 )}
 
                 <button
-                  onClick={() => onSelectTab(item.id)}
+                  onClick={() => handleItemClick(item.id)}
                   className={`w-full flex items-center justify-between px-5 py-2.5 text-sm font-medium transition-all rounded-r-xl ${
                     isActive
                       ? "bg-[#e8dac1] text-[#2c1d11] font-semibold shadow-inner"
@@ -123,9 +146,33 @@ export const LeatherSpineNav: React.FC<LeatherSpineNavProps> = ({
         </div>
 
         <p className="text-[13px] text-amber-400/75 italic font-handwriting leading-relaxed text-center">
-          "A Better You, A More Meaningful Tomorrow." ??
+          "A Better You, A More Meaningful Tomorrow." ✨
         </p>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Permanent Spine */}
+      <aside className="hidden md:flex w-56 md:w-64 min-h-screen leather-spine text-amber-100 flex-col justify-between py-6 select-none shrink-0 relative z-20">
+        {renderNavContent(false)}
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isOpenMobile && (
+        <div className="fixed inset-0 z-50 md:hidden flex animate-fade-in">
+          {/* Backdrop */}
+          <div
+            onClick={onCloseMobile}
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs"
+          />
+          {/* Drawer Sidebar */}
+          <aside className="relative z-10 w-72 max-w-[85vw] h-full leather-spine text-amber-100 flex flex-col justify-between py-6 select-none shadow-2xl overflow-y-auto animate-in slide-in-from-left duration-200">
+            {renderNavContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

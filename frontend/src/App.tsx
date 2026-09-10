@@ -15,12 +15,15 @@ import { InsightsModal } from "./components/InsightsModal";
 import { AskLifeBookWidget } from "./components/AskLifeBookWidget";
 import { SettingsModal } from "./components/SettingsModal";
 import { AdminModal } from "./components/AdminModal";
+import { Menu, BookOpen } from "lucide-react";
 
 export const AppContent: React.FC = () => {
   const { user } = useAuth();
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState("today");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobilePageTab, setMobilePageTab] = useState<"left" | "right">("left");
 
   // Modals
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
@@ -136,18 +139,21 @@ export const AppContent: React.FC = () => {
 
   const handleNavSelect = (tab: string) => {
     setCurrentTab(tab);
+    setMobileMenuOpen(false);
     if (tab === "graph") setGraphModalOpen(true);
     else if (tab === "photos") setPhotosModalOpen(true);
     else if (tab === "insights") setInsightsModalOpen(true);
     else if (tab === "settings" || tab === "privacy") setSettingsModalOpen(true);
     else if (tab === "admin") setAdminModalOpen(true);
     else if (tab === "add_memory") setVoiceModalOpen(true);
+    else if (tab === "commitments") setMobilePageTab("right");
+    else if (tab === "today") setMobilePageTab("left");
   };
 
   const pendingCommitments = commitments.filter((c) => c.status === "PENDING");
 
   return (
-    <div className="min-h-screen bg-[#1c1109] text-[#2c2016] flex flex-col md:flex-row items-stretch justify-center p-0 md:p-6 lg:p-8 font-sans antialiased relative">
+    <div className="min-h-screen bg-[#1c1109] text-[#2c2016] flex flex-col md:flex-row items-stretch justify-center p-0 sm:p-2 md:p-6 lg:p-8 font-sans antialiased relative">
       {/* Desk Atmosphere Items */}
       {/* Coffee Cup on bottom left */}
       <div className="hidden xl:block fixed bottom-6 left-4 z-10 pointer-events-none drop-shadow-2xl">
@@ -181,45 +187,117 @@ export const AppContent: React.FC = () => {
       </div>
 
       {/* Journal Book Outer Shell */}
-      <div className="w-full max-w-7xl flex flex-col md:flex-row shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] rounded-2xl overflow-hidden border-2 border-[#3d2315] relative z-20">
-        {/* Left Leather Spine Navigation */}
+      <div className="w-full max-w-7xl flex flex-col md:flex-row shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] rounded-none sm:rounded-2xl overflow-hidden border-y sm:border-2 border-[#3d2315] relative z-20">
+        {/* Mobile Top App Bar (visible on md:hidden) */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-[#3a2012] text-amber-100 border-b border-[#52301a]">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-1.5 rounded-lg bg-black/25 hover:bg-black/40 text-amber-200 relative transition-colors"
+              title="Open Navigation"
+            >
+              <Menu className="w-5 h-5" />
+              {pendingCommitments.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-600 rounded-full" />
+              )}
+            </button>
+            <div className="flex items-center gap-1.5">
+              <BookOpen className="w-5 h-5 text-amber-400" />
+              <span className="font-bold text-base font-book-brand tracking-wide text-amber-200">
+                LifeBook AI
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setVoiceModalOpen(true)}
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-semibold shadow-xs"
+            >
+              + Add
+            </button>
+            <div
+              onClick={() => setSettingsModalOpen(true)}
+              className="w-7 h-7 rounded-full bg-amber-800 border border-amber-600 flex items-center justify-center text-xs font-bold text-amber-200 cursor-pointer"
+            >
+              {user?.full_name ? user.full_name[0] : "A"}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Page Tab Switcher (visible on lg:hidden) */}
+        <div className="lg:hidden flex items-center bg-[#ede0cb] border-b border-[#d8c7ad] p-1.5 gap-1.5">
+          <button
+            onClick={() => setMobilePageTab("left")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-center ${
+              mobilePageTab === "left"
+                ? "bg-[#fbf7ee] text-[#352010] shadow-xs border border-[#cfbeab]"
+                : "text-[#70553e] hover:text-[#352010]"
+            }`}
+          >
+            📖 Today's Diary
+          </button>
+          <button
+            onClick={() => setMobilePageTab("right")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+              mobilePageTab === "right"
+                ? "bg-[#fbf7ee] text-[#352010] shadow-xs border border-[#cfbeab]"
+                : "text-[#70553e] hover:text-[#352010]"
+            }`}
+          >
+            <span>📋 Tasks & Routines</span>
+            {pendingCommitments.length > 0 && (
+              <span className="px-1.5 py-0.2 bg-red-600 text-white text-[10px] rounded-full">
+                {pendingCommitments.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Left Leather Spine Navigation (desktop sidebar + mobile drawer) */}
         <LeatherSpineNav
           currentTab={currentTab}
           onSelectTab={handleNavSelect}
           pendingCommitmentsCount={pendingCommitments.length}
+          isOpenMobile={mobileMenuOpen}
+          onCloseMobile={() => setMobileMenuOpen(false)}
         />
 
         {/* Double Open Journal Pages */}
         <main className="flex-1 journal-paper flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-[#e2d2ba] journal-page-crease min-h-[90vh]">
-          <JournalLeftPage
-            user={user}
-            activeEntry={activeEntry}
-            onOpenVoice={() => setVoiceModalOpen(true)}
-            onOpenText={() => setTextModalOpen(true)}
-            onOpenPhoto={() => setPhotoModalOpen(true)}
-            onOpenReview={() => setReviewModalOpen(true)}
-            onRetryProcessing={handleRetryProcessing}
-            onOpenPhotos={() => setPhotosModalOpen(true)}
-            onOpenGraph={() => setGraphModalOpen(true)}
-            onTellMeMore={() => setInsightsModalOpen(true)}
-          />
+          <div className={`${mobilePageTab === "left" ? "block" : "hidden"} lg:block flex-1`}>
+            <JournalLeftPage
+              user={user}
+              activeEntry={activeEntry}
+              onOpenVoice={() => setVoiceModalOpen(true)}
+              onOpenText={() => setTextModalOpen(true)}
+              onOpenPhoto={() => setPhotoModalOpen(true)}
+              onOpenReview={() => setReviewModalOpen(true)}
+              onRetryProcessing={handleRetryProcessing}
+              onOpenPhotos={() => setPhotosModalOpen(true)}
+              onOpenGraph={() => setGraphModalOpen(true)}
+              onTellMeMore={() => setInsightsModalOpen(true)}
+            />
+          </div>
 
-          <JournalRightPage
-            user={user}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            pendingCommitments={pendingCommitments}
-            routines={routines}
-            onMarkDone={handleMarkDone}
-            onViewAllCommitments={() => setGraphModalOpen(true)}
-            onViewAllRoutines={() => setInsightsModalOpen(true)}
-            onOpenPhotos={() => setPhotosModalOpen(true)}
-            notifications={notifications}
-            showNotifications={showNotifications}
-            onToggleNotifications={() => setShowNotifications(!showNotifications)}
-            selectedMood={selectedMood}
-            onSelectMood={setSelectedMood}
-          />
+          <div className={`${mobilePageTab === "right" ? "block" : "hidden"} lg:block flex-1`}>
+            <JournalRightPage
+              user={user}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              pendingCommitments={pendingCommitments}
+              routines={routines}
+              onMarkDone={handleMarkDone}
+              onViewAllCommitments={() => setGraphModalOpen(true)}
+              onViewAllRoutines={() => setInsightsModalOpen(true)}
+              onOpenPhotos={() => setPhotosModalOpen(true)}
+              notifications={notifications}
+              showNotifications={showNotifications}
+              onToggleNotifications={() => setShowNotifications(!showNotifications)}
+              selectedMood={selectedMood}
+              onSelectMood={setSelectedMood}
+            />
+          </div>
         </main>
       </div>
 
