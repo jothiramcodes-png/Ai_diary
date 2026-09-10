@@ -20,6 +20,7 @@ class ConversationalAnswer(BaseModel):
     source_entry_id: Optional[str] = None
     related_entries: List[SearchResultItem] = []
     related_entities: List[str] = []
+    forgetting_items: List[ForgettingItem] = []
 
 class ForgettingItem(BaseModel):
     id: str

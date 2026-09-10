@@ -142,6 +142,7 @@ export interface ConversationalAnswer {
     score: number;
   }>;
   related_entities: string[];
+  forgetting_items?: ForgettingItem[];
 }
 
 export interface NotificationItem {

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Sparkles, X, Send, CheckCircle2, Clock, Calendar, ChevronRight } from "lucide-react";
 import { api } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 import { ForgettingItem } from "../types";
 
 interface Message {
@@ -11,22 +12,25 @@ interface Message {
 }
 
 export const AskLifeBookWidget: React.FC = () => {
+  const { user } = useAuth();
+  const userName = user?.full_name?.split(" ")[0] || "there";
+
   const [isOpen, setIsOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 768);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "ai",
-      text: "Hi Arun! ?? What would you like to remember today?"
+      text: `Hi ${user?.full_name?.split(" ")[0] || "there"}! ✨ What would you like to remember or check today?`
     }
   ]);
 
   const quickQuestions = [
+    "What did I do today?",
     "What am I forgetting?",
-    "When did I last meet Ravi?",
-    "Show my Madurai trips.",
-    "What food do I usually eat on Fridays?",
-    "Read today's diary."
+    "What is my favorite movie?",
+    "Who did I meet recently?",
+    "Show my project milestones"
   ];
 
   const handleAsk = async (textToAsk: string) => {
@@ -37,27 +41,16 @@ export const AskLifeBookWidget: React.FC = () => {
     setLoading(true);
 
     try {
-      if (userMsg.toLowerCase().includes("forgetting")) {
-        const res = await api.whatAmIForgetting();
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "ai",
-            text: res.headline || "You have 3 things worth checking:",
-            forgettingItems: res.items
-          }
-        ]);
-      } else {
-        const res = await api.askQuestion(userMsg);
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "ai",
-            text: res.answer,
-            sourceEntryId: res.source_entry_id
-          }
-        ]);
-      }
+      const res = await api.askQuestion(userMsg);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "ai",
+          text: res.answer,
+          sourceEntryId: res.source_entry_id,
+          forgettingItems: res.forgetting_items && res.forgetting_items.length > 0 ? res.forgetting_items : undefined
+        }
+      ]);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -78,7 +71,7 @@ export const AskLifeBookWidget: React.FC = () => {
         ...prev,
         {
           sender: "ai",
-          text: `? Marked "${item.title}" as Done in your database.`
+          text: `✓ Marked "${item.title}" as Done in your database.`
         }
       ]);
     } catch (err) {

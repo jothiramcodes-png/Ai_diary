@@ -178,7 +178,7 @@ Return only the final diary text.'''
 
     async def answer_question(self, query: str, context_entries: List[Dict[str, Any]], user_profile: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         if not self.api_key:
-            return await self.fallback.answer_question(query, context_entries)
+            return await self.fallback.answer_question(query, context_entries, user_profile=user_profile)
 
         user_name = (user_profile or {}).get('full_name', 'User')
         profile_details = (user_profile or {}).get('preferences', {})
@@ -186,12 +186,19 @@ Return only the final diary text.'''
         routines = (user_profile or {}).get('routines', [])
         entities = (user_profile or {}).get('entities', [])
 
-        system_prompt = f'''You are LifeBook AI, the deeply personal, empathetic, and intelligent digital assistant for {user_name}.
-You have direct, private access to {user_name}'s diary, commitments, habits, and life memories.
+        current_date_str = "Thursday, September 10, 2026"
 
-### {user_name}'s Profile:
+        system_prompt = f'''You are LifeBook AI, the deeply personal, empathetic, and intelligent digital assistant for {user_name}.
+You have direct, private access to {user_name}'s personal digital diary, commitments, habits, and life memories.
+
+### CURRENT REFERENCE DATE (TODAY):
+- Today is: {current_date_str}.
+- Any diary entry dated September 10, 2026 IS TODAY's entry!
+- Any diary entry dated September 09, 2026 IS YESTERDAY's entry.
+
+### {user_name}'s Profile & Preferences:
 - Name: {user_name}
-- Known background / details: {json.dumps(profile_details)}
+- Known background / preferences: {json.dumps(profile_details)}
 
 ### Active Commitments & Due Dates:
 {json.dumps(commitments, indent=2) if commitments else 'None currently pending.'}
@@ -202,35 +209,47 @@ You have direct, private access to {user_name}'s diary, commitments, habits, and
 ### Known People, Places & Projects (Life Graph):
 {json.dumps(entities, indent=2) if entities else 'No life graph entities recorded yet.'}
 
-### Recent Diary Memories:
+### Complete Diary Memories (chronological order):
 {json.dumps(context_entries, indent=2) if context_entries else 'No journal entries recorded yet.'}
 
 Guidelines:
-1. Answer the user's question accurately, concisely, and warmly based strictly on the memories, commitments, and profile above.
-2. If the user asks "What am I forgetting?" or "What tasks do I have?", synthesize their active commitments, due dates, and priority tasks.
-3. If they ask about specific people (e.g. Poovarasan, Kisho Varma, Ravi), places (Madurai), or projects (BurnEx AI, SIH), reference the specific dates and details.
-4. If the question cannot be answered from the provided memories, explain gently that no memory has been recorded yet for that topic.
-5. If the user writes in Tamil, Tanglish, or English, match their language tone naturally.
+1. Always base your answers directly on {user_name}'s authentic memories, commitments, and profile above. Be factually accurate, thorough, and empathetic.
+2. When asked about "today" (e.g. "What did I do today?", "Read today's diary", "Who did I meet today?"), inspect all entries for {current_date_str} and summarize what happened.
+3. When asked about personal preferences, tastes, or facts (e.g. "What is my favorite movie?", "What food do I like?", "What did I say about Iron Man?"), search the memory texts carefully (e.g. if an entry mentions "my favourite movie is iron man", state clearly that your favorite movie is Iron Man).
+4. When asked about specific people (e.g. Poovarasan, Kisho Varma, Ravi, Anand, Kumar) or places (e.g. Madurai, Marina Beach, College), specify the exact activities, dates, and discussions from the memories.
+5. When asked about commitments, deadlines, or "What am I forgetting?", enumerate active commitments with their due dates and projects.
+6. If the question cannot be answered from any provided memory, gently explain that no memory has been recorded yet for that specific topic.
+7. If the user writes in Tamil, Tanglish, or English, match their language style naturally.
+8. Speak warmly, concisely, and supportively as their personal life assistant.
 '''
         try:
             content = await self._call_openrouter([
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': query}
-            ], temperature=0.4)
+            ], temperature=0.3)
 
             if content:
-                source_id = None
-                if context_entries:
-                    source_id = context_entries[0].get('id')
+                # Find matching entry ID
+                matched_id = None
+                q_words = [w.lower() for w in query.split() if len(w) > 3 and w.lower() not in ["what", "when", "where", "which", "your", "today", "with"]]
+                for e in context_entries:
+                    corpus = f"{e.get('title', '')} {e.get('content', '')} {e.get('raw_text', '')}".lower()
+                    if any(w in corpus for w in q_words):
+                        matched_id = e.get('id')
+                        break
+
+                if not matched_id and context_entries:
+                    matched_id = context_entries[0].get('id')
+
                 return {
                     'answer': content.strip(),
-                    'source_entry_id': source_id,
+                    'source_entry_id': matched_id,
                     'confidence': 0.98
                 }
         except Exception as e:
             logger.warning(f'OpenRouter answer_question failed, falling back: {e}')
 
-        return await self.fallback.answer_question(query, context_entries)
+        return await self.fallback.answer_question(query, context_entries, user_profile=user_profile)
 
     async def generate_memory_story(self, entries: List[Dict[str, Any]], title: str) -> Dict[str, Any]:
         return await self.fallback.generate_memory_story(entries, title)
